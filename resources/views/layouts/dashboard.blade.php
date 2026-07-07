@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html :class="{ 'theme-dark': dark }" x-data="data()" lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>School DMS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ asset('assets/css/tailwind.output.css') }}" />
+    <script src="https://cdn.jsdelivr.net/gh/alpinejs/alpine@v2.x.x/dist/alpine.min.js" defer></script>
+    <script src="{{ asset('assets/js/init-alpine.js') }}"></script>
+</head>
+
+<body>
+    <div class="flex h-screen bg-gray-50 dark:bg-gray-900" :class="{ 'overflow-hidden': isSideMenuOpen }">
+
+        <!-- Desktop sidebar -->
+        <aside class="z-20 hidden w-64 overflow-y-auto bg-white dark:bg-gray-800 md:block flex-shrink-0">
+            <div class="py-4 text-gray-500 dark:text-gray-400">
+                <a class="ml-6 text-lg font-bold text-gray-800 dark:text-gray-200" href="#">
+                    School DMS
+                </a>
+                <ul class="mt-6">
+                    @if(auth()->user()->hasRole('student'))
+                    <li class="relative px-6 py-3">
+                        @if(request()->routeIs('student.dashboard'))
+                        <span class="absolute inset-y-0 left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg" aria-hidden="true"></span>
+                        @endif
+                        <a class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('student.dashboard') ? 'text-gray-800 dark:text-gray-100' : '' }}" href="{{ route('student.dashboard') }}">
+                            <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                            </svg>
+                            <span class="ml-4">Dashboard</span>
+                        </a>
+                    </li>
+
+                    <li class="relative px-6 py-3">
+                        @if(request()->routeIs('student.requests.*'))
+                        <span class="absolute inset-y-0 left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg" aria-hidden="true"></span>
+                        @endif
+                        <a class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('student.requests.*') ? 'text-gray-800 dark:text-gray-100' : '' }}" href="{{ route('student.requests.index') }}">
+                            <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                            </svg>
+                            <span class="ml-4">My Requests</span>
+                        </a>
+                    </li>
+
+                    @endif
+                    @if(auth()->user()->hasRole('admin'))
+                    <li class="relative px-6 py-3">
+                        @if(request()->routeIs('admin.dashboard'))
+                        <span class="absolute inset-y-0 left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg" aria-hidden="true"></span>
+                        @endif
+                        <a class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('admin.dashboard') ? 'text-gray-800 dark:text-gray-100' : '' }}" href="{{ route('admin.dashboard') }}">
+                            <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                            </svg>
+                            <span class="ml-4">Dashboard</span>
+                        </a>
+                    </li>
+
+                    <li class="relative px-6 py-3">
+                        @if(request()->routeIs('admin.requests.*'))
+                        <span class="absolute inset-y-0 left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg" aria-hidden="true"></span>
+                        @endif
+                        <a class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('admin.requests.*') ? 'text-gray-800 dark:text-gray-100' : '' }}" href="{{ route('admin.requests.index') }}">
+                            <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                            </svg>
+                            <span class="ml-4">All Requests</span>
+                        </a>
+                    </li>
+
+                    <li class="relative px-6 py-3">
+                        @if(request()->routeIs('admin.students.*'))
+                        <span class="absolute inset-y-0 left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg" aria-hidden="true"></span>
+                        @endif
+                        <a class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('admin.students.*') ? 'text-gray-800 dark:text-gray-100' : '' }}" href="{{ route('admin.students.index') }}">
+                            <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <span class="ml-4">Students</span>
+                        </a>
+                    </li>
+
+                    <li class="relative px-6 py-3">
+                        @if(request()->routeIs('admin.registrars.*'))
+                        <span class="absolute inset-y-0 left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg" aria-hidden="true"></span>
+                        @endif
+                        <a class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('admin.registrars.*') ? 'text-gray-800 dark:text-gray-100' : '' }}" href="{{ route('admin.registrars.index') }}">
+                            <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                            </svg>
+                            <span class="ml-4">Registrars</span>
+                        </a>
+                    </li>
+
+                    <li class="relative px-6 py-3" x-data="{ open: {{ request()->routeIs('admin.settings.*') ? 'true' : 'false' }} }">
+                        @if(request()->routeIs('admin.settings.*'))
+                        <span class="absolute left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg" style="top:0;height:2.75rem;" aria-hidden="true"></span>
+                        @endif
+                        <button @click="open = !open"
+                            class="inline-flex items-center justify-between w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('admin.settings.*') ? 'text-gray-800 dark:text-gray-100' : '' }}">
+                            <span class="inline-flex items-center">
+                                <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                <span class="ml-4">Settings</span>
+                            </span>
+                            <svg class="w-4 h-4 transition-transform duration-150" :class="{ 'rotate-180': open }" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
+                        <ul x-show="open" x-transition:enter="transition ease-in-out duration-150" x-transition:enter-start="opacity-0 transform -translate-y-1" x-transition:enter-end="opacity-100">
+                            {{-- Programs / Courses --}}
+                            <li class="relative px-6 py-3">
+                                <a href="{{ route('admin.settings.programs') }}"
+                                    class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('admin.settings.programs') ? 'text-gray-800 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400' }}">
+                                    <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;{{ request()->routeIs('admin.settings.programs') ? 'background-color:#7c3aed;' : 'border:2px solid #9ca3af;background-color:transparent;' }}"></span>
+                                    <span class="ml-4">Programs / Courses</span>
+                                </a>
+                            </li>
+                            {{-- Student Categories --}}
+                            <li class="relative px-6 py-3">
+                                <a href="{{ route('admin.settings.student-types') }}"
+                                    class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('admin.settings.student-types') ? 'text-gray-800 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400' }}">
+                                    <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;{{ request()->routeIs('admin.settings.student-types') ? 'background-color:#7c3aed;' : 'border:2px solid #9ca3af;background-color:transparent;' }}"></span>
+                                    <span class="ml-4">Student Categories</span>
+                                </a>
+                            </li>
+                            {{-- Document Management nested submenu --}}
+                            <li class="relative px-6 py-3" x-data="{ docOpen: {{ request()->routeIs('admin.settings.document-management.*') ? 'true' : 'false' }} }">
+                                <button @click="docOpen = !docOpen"
+                                    class="inline-flex items-center justify-between w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('admin.settings.document-management.*') ? 'text-gray-800 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400' }}">
+                                    <span class="inline-flex items-center">
+                                        <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;{{ request()->routeIs('admin.settings.document-management.*') ? 'background-color:#7c3aed;' : 'border:2px solid #9ca3af;background-color:transparent;' }}"></span>
+                                        <span class="ml-4">Document Mgmt.</span>
+                                    </span>
+                                    <svg class="w-4 h-4 transition-transform duration-150" :class="{ 'rotate-180': docOpen }" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                </button>
+                                <ul x-show="docOpen">
+                                    {{-- Document Type Weight --}}
+                                    <li class="relative px-6 py-3">
+                                        <a href="{{ route('admin.settings.document-management.document-weights') }}"
+                                            class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('admin.settings.document-management.document-weights') ? 'text-gray-800 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400' }}">
+                                            <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;{{ request()->routeIs('admin.settings.document-management.document-weights') ? 'background-color:#7c3aed;' : 'border:2px solid #9ca3af;background-color:transparent;' }}"></span>
+                                            <span class="ml-4">Document Type Weight</span>
+                                        </a>
+                                    </li>
+                                    {{-- Student Category Weight --}}
+                                    <li class="relative px-6 py-3">
+                                        <a href="{{ route('admin.settings.document-management.student-weights') }}"
+                                            class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('admin.settings.document-management.student-weights') ? 'text-gray-800 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400' }}">
+                                            <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;{{ request()->routeIs('admin.settings.document-management.student-weights') ? 'background-color:#7c3aed;' : 'border:2px solid #9ca3af;background-color:transparent;' }}"></span>
+                                            <span class="ml-4">Student Category Weight</span>
+                                        </a>
+                                    </li>
+                                    {{-- Urgency Level --}}
+                                    <li class="relative px-6 py-3">
+                                        <a href="{{ route('admin.settings.document-management.urgency-levels') }}"
+                                            class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('admin.settings.document-management.urgency-levels') ? 'text-gray-800 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400' }}">
+                                            <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;{{ request()->routeIs('admin.settings.document-management.urgency-levels') ? 'background-color:#7c3aed;' : 'border:2px solid #9ca3af;background-color:transparent;' }}"></span>
+                                            <span class="ml-4">Urgency Level</span>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    @endif
+                    @if(auth()->user()->hasRole('registrar'))
+                    <li class="relative px-6 py-3">
+                        @if(request()->routeIs('registrar.dashboard'))
+                        <span class="absolute inset-y-0 left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg" aria-hidden="true"></span>
+                        @endif
+                        <a class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('registrar.dashboard') ? 'text-gray-800 dark:text-gray-100' : '' }}" href="{{ route('registrar.dashboard') }}">
+                            <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                            </svg>
+                            <span class="ml-4">Dashboard</span>
+                        </a>
+                    </li>
+                    <li class="relative px-6 py-3">
+                        @if(request()->routeIs('registrar.requests.*'))
+                        <span class="absolute inset-y-0 left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg" aria-hidden="true"></span>
+                        @endif
+                        <a class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('registrar.requests.*') ? 'text-gray-800 dark:text-gray-100' : '' }}" href="{{ route('registrar.requests.index') }}">
+                            <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                            </svg>
+                            <span class="ml-4">All Requests</span>
+                        </a>
+                    </li>
+                    <li class="relative px-6 py-3">
+                        @if(request()->routeIs('registrar.students.*'))
+                        <span class="absolute inset-y-0 left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg" aria-hidden="true"></span>
+                        @endif
+                        <a class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('registrar.students.*') ? 'text-gray-800 dark:text-gray-100' : '' }}" href="{{ route('registrar.students.index') }}">
+                            <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                                <path d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            <span class="ml-4">Students</span>
+                        </a>
+                    </li>
+                    @endif
+                </ul>
+
+                @if(auth()->user()->hasRole('student'))
+                <div class="px-6 my-6">
+                    <a href="{{ route('student.requests.create') }}"
+                        class="flex items-center justify-between w-full px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
+                        New Request
+                        <span class="ml-2" aria-hidden="true">+</span>
+                    </a>
+                </div>
+                @endif
+            </div>
+        </aside>
+
+        <!-- Mobile sidebar overlay -->
+        <div x-show="isSideMenuOpen" x-transition:enter="transition ease-in-out duration-150"
+            x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+            x-transition:leave="transition ease-in-out duration-150" x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 z-10 flex items-end bg-black bg-opacity-50 sm:items-center sm:justify-center"></div>
+
+        <div class="flex flex-col flex-1 w-full">
+            <!-- Navbar -->
+            <header class="z-10 py-4 bg-white shadow-md dark:bg-gray-800">
+                <div class="container flex items-center justify-between h-full px-6 mx-auto text-purple-600 dark:text-purple-300">
+                    <!-- Mobile hamburger -->
+                    <button class="p-1 mr-5 -ml-1 rounded-md md:hidden focus:outline-none focus:shadow-outline-purple" @click="toggleSideMenu" aria-label="Menu">
+                        <svg class="w-6 h-6" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+                        </svg>
+                    </button>
+
+                    <!-- Search -->
+                    <div class="flex justify-center flex-1 lg:mr-32">
+                        <div class="relative w-full max-w-xl mr-6 focus-within:text-purple-500">
+                            <div class="absolute inset-y-0 flex items-center pl-2">
+                                <svg class="w-4 h-4" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"></path>
+                                </svg>
+                            </div>
+                            <input
+                                class="w-full pl-8 pr-2 text-sm text-gray-700 placeholder-gray-600 bg-gray-100 border-0 rounded-md dark:placeholder-gray-500 dark:bg-gray-700 dark:text-gray-200 focus:placeholder-gray-500 focus:bg-white focus:border-purple-300 focus:outline-none form-input"
+                                type="text"
+                                id="globalSearch"
+                                placeholder="Search..."
+                                aria-label="Search"
+                                onkeyup="globalSearch(this.value)" />
+                        </div>
+                    </div>
+
+                    <ul class="flex items-center flex-shrink-0 space-x-6">
+                        <!-- Dark mode toggle -->
+                        <li class="flex">
+                            <button class="rounded-md focus:outline-none focus:shadow-outline-purple" @click="toggleTheme" aria-label="Toggle color mode">
+                                <template x-if="!dark">
+                                    <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                                    </svg>
+                                </template>
+                                <template x-if="dark">
+                                    <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </template>
+                            </button>
+                        </li>
+
+                        <!-- Notifications bell -->
+                        @auth
+                        @php $unreadCount = auth()->user()->unreadNotifications->count(); @endphp
+                        <li class="relative">
+                            <button class="relative align-middle rounded-md focus:outline-none focus:shadow-outline-purple"
+                                @click="toggleNotificationsMenu" @keydown.escape="closeNotificationsMenu"
+                                aria-label="Notifications" aria-haspopup="true">
+                                <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
+                                </svg>
+                                @if($unreadCount > 0)
+                                <span class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-red-500 border-2 border-white rounded-full dark:border-gray-800">
+                                    {{ $unreadCount > 9 ? '9+' : $unreadCount }}
+                                </span>
+                                @endif
+                            </button>
+                            <template x-if="isNotificationsMenuOpen">
+                                <div x-transition:leave="transition ease-in duration-150"
+                                    x-transition:leave-start="opacity-100"
+                                    x-transition:leave-end="opacity-0"
+                                    @click.away="closeNotificationsMenu"
+                                    @keydown.escape="closeNotificationsMenu"
+                                    class="absolute right-0 mt-2 bg-white border border-gray-100 rounded-lg shadow-lg dark:border-gray-700 dark:bg-gray-800 overflow-hidden"
+                                    style="z-index: 50; width: 380px;"
+                                    aria-label="submenu">
+                                    <!-- Header -->
+                                    <div class="flex justify-between items-center px-4 py-3 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">Notifications</span>
+                                            @if($unreadCount > 0)
+                                            <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-purple-600 rounded-full">
+                                                {{ $unreadCount }} new
+                                            </span>
+                                            @endif
+                                        </div>
+                                        @if($unreadCount > 0)
+                                        <form action="{{ route('notifications.markAllRead') }}" method="POST">
+                                            @csrf
+                                            <button type="submit" class="text-xs text-purple-600 hover:text-purple-800 dark:hover:text-purple-400 font-medium">
+                                                Mark all read
+                                            </button>
+                                        </form>
+                                        @endif
+                                    </div>
+
+                                    <!-- Notification list (scrollable) -->
+                                    <ul class="overflow-y-auto" style="max-height: 320px;">
+                                        @forelse(auth()->user()->notifications->take(8) as $notification)
+                                        <li class="border-b dark:border-gray-700 last:border-0">
+                                            <a href="{{ route('notifications.read', $notification->id) }}"
+                                                class="flex items-start gap-3 px-4 py-3 transition-colors duration-150 hover:bg-gray-50 dark:hover:bg-gray-700
+                                                {{ is_null($notification->read_at) ? 'bg-purple-50 dark:bg-gray-750' : '' }}">
+                                                <!-- Dot indicator -->
+                                                <span class="mt-1.5 w-2 h-2 flex-shrink-0 rounded-full {{ is_null($notification->read_at) ? 'bg-purple-600' : 'bg-gray-300 dark:bg-gray-600' }}"></span>
+                                                <!-- Content -->
+                                                <div class="flex-1 min-w-0">
+                                                    <p class="text-sm leading-snug {{ is_null($notification->read_at) ? 'font-semibold text-gray-800 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400' }}">
+                                                        {{ $notification->data['message'] }}
+                                                    </p>
+                                                    <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+                                                        {{ $notification->created_at->diffForHumans() }}
+                                                        <span class="mx-1">·</span>
+                                                        {{ $notification->created_at->format('M d, Y g:i A') }}
+                                                    </p>
+                                                </div>
+                                            </a>
+                                        </li>
+                                        @empty
+                                        <li class="px-6 text-sm text-center text-gray-400 dark:text-gray-500" style="margin-top: 2rem; margin-bottom: 2rem;">
+                                            No notifications yet
+                                        </li>
+                                        @endforelse
+                                    </ul>
+                                </div>
+                            </template>
+                        </li>
+                        @endauth
+
+                        <!-- Profile menu -->
+                        <li class="relative">
+                            <button class="align-middle rounded-full focus:shadow-outline-purple focus:outline-none" @click="toggleProfileMenu" @keydown.escape="closeProfileMenu" aria-label="Account" aria-haspopup="true">
+                                <div class="w-8 h-8 rounded-full bg-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                                </div>
+                            </button>
+                            <template x-if="isProfileMenuOpen">
+                                <ul x-transition:leave="transition ease-in duration-150"
+                                    x-transition:leave-start="opacity-100"
+                                    x-transition:leave-end="opacity-0"
+                                    @click.away="closeProfileMenu"
+                                    @keydown.escape="closeProfileMenu"
+                                    class="absolute right-0 w-56 p-2 mt-2 space-y-2 text-gray-600 bg-white border border-gray-100 rounded-lg shadow-md dark:border-gray-700 dark:text-gray-300 dark:bg-gray-700"
+                                    aria-label="submenu">
+                                    <li class="flex">
+                                        <span class="inline-flex items-center w-full px-2 py-1 text-sm font-semibold">
+                                            {{ auth()->user()->name }}
+                                        </span>
+                                    </li>
+                                    <li class="flex">
+                                        <span class="inline-flex items-center w-full px-2 py-1 text-xs text-purple-500">
+                                            {{ ucfirst(auth()->user()->getRoleNames()->first()) }}
+                                        </span>
+                                    </li>
+                                    <li class="flex">
+                                        <form method="POST" action="{{ route('logout') }}" class="w-full">
+                                            @csrf
+                                            <button type="submit"
+                                                class="inline-flex items-center w-full px-2 py-1 text-sm font-semibold transition-colors duration-150 rounded-md hover:bg-gray-100 hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-gray-200">
+                                                <svg class="w-4 h-4 mr-3" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+                                                </svg>
+                                                <span>Log out</span>
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </template>
+                        </li>
+                    </ul>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="h-full pb-16 overflow-y-auto">
+                <div class="container px-6 pt-6 mx-auto grid">
+                    @yield('content')
+                </div>
+            </main>
+        </div>
+    </div>
+    <script>
+        function globalSearch(query) {
+            const rows = document.querySelectorAll('tbody tr');
+
+            if (rows.length === 0) return;
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (query.toLowerCase() === '' || text.includes(query.toLowerCase())) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
