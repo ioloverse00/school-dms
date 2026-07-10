@@ -1,7 +1,7 @@
 @extends('layouts.dashboard')
 
 @section('content')
-<div class="container mx-auto px-6 py-8">
+<div class="w-full py-8">
     <div class="flex justify-between items-center mt-6 mb-6">
         <h1 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">
             My Document Requests

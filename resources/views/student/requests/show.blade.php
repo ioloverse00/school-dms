@@ -28,7 +28,7 @@
     $badgeColor = $statusColors[$documentRequest->status] ?? 'text-gray-700 bg-gray-100';
 @endphp
 
-<div class="container px-6 mx-auto">
+<div class="w-full">
     <div class="flex items-center justify-between mt-6 mb-6">
         <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">
             Request Details
@@ -40,9 +40,9 @@
     </div>
 
     {{-- Status Banner --}}
-    <div class="mb-6 p-4 rounded-lg flex items-center gap-3
+    <div class="mb-6 p-4 rounded-lg flex items-center gap-4
         {{ $isRejected ? 'bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700' : 'bg-purple-50 dark:bg-gray-800 border border-purple-100 dark:border-gray-700' }}">
-        <span class="px-3 py-1 text-sm font-bold rounded-full {{ $badgeColor }}">
+        <span class="px-3 py-1 text-sm font-bold rounded-full shrink-0 {{ $badgeColor }}">
             {{ ucwords(str_replace('_', ' ', $documentRequest->status)) }}
         </span>
         <span class="text-sm text-gray-600 dark:text-gray-400">
@@ -198,7 +198,7 @@
                     </p>
                 </div>
                 <p class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ $file->original_name }}</p>
-                <a href="{{ Storage::url($file->file_path) }}" target="_blank"
+                <a href="{{ route('files.view', $file->id) }}" target="_blank"
                     class="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700"
                     style="align-self: flex-start;">
                     View File

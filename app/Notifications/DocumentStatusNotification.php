@@ -25,6 +25,7 @@ class DocumentStatusNotification extends Notification
             'request_id' => $this->documentRequest->request_id,
             'document' => $this->documentRequest->documentType->name,
             'status' => $this->documentRequest->status,
+            'url' => route('student.requests.show', $this->documentRequest->id),
             'message' => 'Your request ' . $this->documentRequest->request_id . ' status has been updated to: ' . ucwords(str_replace('_', ' ', $this->documentRequest->status)),
         ];
     }

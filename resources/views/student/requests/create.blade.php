@@ -1,7 +1,7 @@
 @extends('layouts.dashboard')
 
 @section('content')
-<div class="container px-6 mx-auto">
+<div class="w-full">
     <h2 class="mt-6 mb-6 text-2xl font-semibold text-gray-700 dark:text-gray-200">
         New Document Request
     </h2>
@@ -134,27 +134,12 @@
             <p class="mb-4 text-sm font-semibold text-gray-600 dark:text-gray-400">Attachments</p>
             <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem 3rem;" class="mb-6">
                 <label class="block">
-                    <span class="text-sm text-gray-700 dark:text-gray-400">Valid ID <span class="text-red-500">*</span></span>
-                    <input type="file" name="valid_id" accept=".pdf,.jpg,.jpeg,.png"
-                        class="block w-full mt-1 text-sm form-input dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
-                    @error('valid_id')
-                        <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
-                    @enderror
-                </label>
-
-                <label class="block">
                     <span class="text-sm text-gray-700 dark:text-gray-400">Proof of Payment <span class="text-red-500">*</span></span>
                     <input type="file" name="proof_of_payment" accept=".pdf,.jpg,.jpeg,.png"
                         class="block w-full mt-1 text-sm form-input dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
                     @error('proof_of_payment')
                         <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                     @enderror
-                </label>
-
-                <label class="block">
-                    <span class="text-sm text-gray-700 dark:text-gray-400">Request Form <span class="text-xs text-gray-400">(optional)</span></span>
-                    <input type="file" name="request_form" accept=".pdf,.jpg,.jpeg,.png"
-                        class="block w-full mt-1 text-sm form-input dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
                 </label>
             </div>
 

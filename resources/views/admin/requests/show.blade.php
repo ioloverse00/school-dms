@@ -1,7 +1,7 @@
 @extends('layouts.dashboard')
 
 @section('content')
-<div class="container px-6 mx-auto">
+<div class="w-full">
     <div class="flex items-center justify-between my-6">
         <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">Request Details</h2>
         <div style="display:flex; align-items:center; gap:1rem;">
@@ -134,7 +134,7 @@
                     {{ ucwords(str_replace('_', ' ', $file->file_type)) }}
                 </p>
                 <p class="text-xs text-gray-500 mb-2">{{ $file->original_name }}</p>
-                <a href="{{ Storage::url($file->file_path) }}" target="_blank"
+                <a href="{{ route('files.view', $file->id) }}" target="_blank"
                     class="px-3 py-1 text-xs font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700">
                     View File
                 </a>

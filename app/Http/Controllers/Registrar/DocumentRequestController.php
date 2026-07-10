@@ -6,23 +6,41 @@ use App\Http\Controllers\Controller;
 use App\Models\DocumentRequest;
 use App\Mail\DocumentStatusUpdated;
 use App\Notifications\DocumentStatusNotification;
+use App\Support\DocumentRequestCsvExporter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
 
 class DocumentRequestController extends Controller
 {
+    private const EXPORTABLE_STATUSES = [
+        'pending_verification',
+        'processing',
+        'ready_for_release',
+        'completed',
+        'rejected',
+    ];
+
     public function index(Request $request)
     {
         $showArchived = $request->boolean('archived');
+        $status = $this->validatedStatus($request);
 
         $requests = DocumentRequest::with(['user', 'documentType'])
             ->when($showArchived, fn($q) => $q->whereNotNull('archived_at'))
             ->when(!$showArchived, fn($q) => $q->whereNull('archived_at'))
+            ->when($status, fn($q) => $q->where('status', $status))
             ->orderBy('priority_score', 'desc')
             ->paginate(10)
             ->withQueryString();
 
-        return view('registrar.requests.index', compact('requests', 'showArchived'));
+        $statusOptions = $this->statusOptions();
+
+        return view('registrar.requests.index', compact('requests', 'showArchived', 'status', 'statusOptions'));
+    }
+
+    public function export(Request $request)
+    {
+        return DocumentRequestCsvExporter::download($request->boolean('archived'), $this->validatedStatus($request));
     }
 
     public function show($id)
@@ -73,5 +91,23 @@ class DocumentRequestController extends Controller
 
         return redirect()->route('registrar.requests.show', $id)
             ->with('success', 'Request unarchived.');
+    }
+
+    private function validatedStatus(Request $request): ?string
+    {
+        $status = $request->query('status');
+
+        return in_array($status, self::EXPORTABLE_STATUSES, true) ? $status : null;
+    }
+
+    private function statusOptions(): array
+    {
+        return [
+            'pending_verification' => 'Pending',
+            'processing' => 'Processing',
+            'ready_for_release' => 'Ready for Release',
+            'completed' => 'Completed',
+            'rejected' => 'Rejected',
+        ];
     }
 }

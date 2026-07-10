@@ -5,22 +5,41 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\SystemSetting;
 use App\Models\User;
+use App\Support\StudentCsvExporter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 class StudentController extends Controller
 {
-    public function index()
+    private const STUDENT_TYPES = [
+        'regular',
+        'graduating',
+        'alumni',
+    ];
+
+    public function index(Request $request)
     {
-        $students     = User::role('student')->paginate(10);
+        $selectedStudentType = $this->validatedStudentType($request);
+        $students     = User::role('student')
+            ->withCount('documentRequests')
+            ->when($selectedStudentType, fn ($query) => $query->where('student_type', $selectedStudentType))
+            ->paginate(10)
+            ->withQueryString();
         $programs     = SystemSetting::get('programs', config('programs.default', []));
         $studentTypes = SystemSetting::get('student_types', [
             ['value' => 'regular',    'label' => 'Regular Student'],
             ['value' => 'graduating', 'label' => 'Graduating Student'],
             ['value' => 'alumni',     'label' => 'Alumni'],
         ]);
-        return view('admin.students.index', compact('students', 'programs', 'studentTypes'));
+        $routePrefix = request()->routeIs('registrar.*') ? 'registrar' : 'admin';
+
+        return view('admin.students.index', compact('students', 'programs', 'studentTypes', 'routePrefix', 'selectedStudentType'));
+    }
+
+    public function export(Request $request)
+    {
+        return StudentCsvExporter::download($this->validatedStudentType($request));
     }
 
     public function create()
@@ -103,5 +122,12 @@ class StudentController extends Controller
         $user->delete();
         return redirect()->route('admin.students.index')
             ->with('success', 'Student deleted successfully!');
+    }
+
+    private function validatedStudentType(Request $request): ?string
+    {
+        $studentType = $request->query('student_type');
+
+        return in_array($studentType, self::STUDENT_TYPES, true) ? $studentType : null;
     }
 }

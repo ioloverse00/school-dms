@@ -12,6 +12,8 @@ use App\Http\Controllers\Registrar\DocumentRequestController as RegistrarDocumen
 use App\Http\Controllers\Admin\RegistrarController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\AiForecastController;
+use App\Models\RequiredFile;
+use Illuminate\Support\Facades\Storage;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -47,11 +49,13 @@ Route::middleware(['auth', 'role:student'])->prefix('student')->name('student.')
 Route::middleware(['auth', 'role:registrar|admin'])->prefix('registrar')->name('registrar.')->group(function () {
     Route::get('/dashboard', [RegistrarDashboardController::class, 'index'])->name('dashboard');
     Route::get('/requests', [RegistrarDocumentRequestController::class, 'index'])->name('requests.index');
+    Route::get('/requests/export/csv', [RegistrarDocumentRequestController::class, 'export'])->name('requests.export');
     Route::get('/requests/{id}', [RegistrarDocumentRequestController::class, 'show'])->name('requests.show');
     Route::put('/requests/{id}', [RegistrarDocumentRequestController::class, 'update'])->name('requests.update');
     Route::patch('/requests/{id}/archive', [RegistrarDocumentRequestController::class, 'archive'])->name('requests.archive');
     Route::patch('/requests/{id}/unarchive', [RegistrarDocumentRequestController::class, 'unarchive'])->name('requests.unarchive');
     Route::get('/students', [StudentController::class, 'index'])->name('students.index');
+    Route::get('/students/export/csv', [StudentController::class, 'export'])->name('students.export');
     Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
     Route::post('/students', [StudentController::class, 'store'])->name('students.store');
     Route::get('/students/{student}', [StudentController::class, 'edit'])->name('students.edit');
@@ -64,12 +68,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/ai-forecast', AiForecastController::class)->name('ai-forecast');
     Route::get('/requests', [AdminDocumentRequestController::class, 'index'])->name('requests.index');
+    Route::get('/requests/export/csv', [AdminDocumentRequestController::class, 'export'])->name('requests.export');
     Route::get('/requests/{documentRequest}', [AdminDocumentRequestController::class, 'show'])->name('requests.show');
     Route::put('/requests/{documentRequest}', [AdminDocumentRequestController::class, 'update'])->name('requests.update');
     Route::patch('/requests/{documentRequest}/archive', [AdminDocumentRequestController::class, 'archive'])->name('requests.archive');
     Route::patch('/requests/{documentRequest}/unarchive', [AdminDocumentRequestController::class, 'unarchive'])->name('requests.unarchive');
     
     Route::get('/students', [StudentController::class, 'index'])->name('students.index');
+    Route::get('/students/export/csv', [StudentController::class, 'export'])->name('students.export');
     Route::get('/students/create', [StudentController::class, 'create'])->name('students.create');
     Route::post('/students', [StudentController::class, 'store'])->name('students.store');
     Route::get('/students/{student}', [StudentController::class, 'edit'])->name('students.edit');
@@ -102,15 +108,35 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
 // Notification routes
 Route::middleware('auth')->group(function () {
+    Route::get('/files/{requiredFile}', function (RequiredFile $requiredFile) {
+        $user = auth()->user();
+        $documentRequest = $requiredFile->documentRequest()->with('user')->firstOrFail();
+
+        if (
+            $user->hasRole('admin') ||
+            $user->hasRole('registrar') ||
+            ($user->hasRole('student') && $documentRequest->user_id === $user->id)
+        ) {
+            return Storage::disk('public')->response($requiredFile->file_path, $requiredFile->original_name);
+        }
+
+        abort(403);
+    })->name('files.view');
+
     Route::get('/notifications/{id}/read', function ($id) {
         $notification = auth()->user()->notifications()->findOrFail($id);
         $notification->markAsRead();
-        
-        // Redirect based on role
+
+        if (!empty($notification->data['url'])) {
+            return redirect($notification->data['url'])
+                ->with('highlight', $notification->data['request_id'] ?? null);
+        }
+
         if (auth()->user()->hasRole('student')) {
             return redirect()->route('student.requests.index')
                 ->with('highlight', $notification->data['request_id']);
         }
+
         return redirect()->route('registrar.requests.index')
             ->with('highlight', $notification->data['request_id']);
     })->name('notifications.read');

@@ -1,7 +1,7 @@
 @extends('layouts.dashboard')
 
 @section('content')
-<div class="container px-6 mx-auto" x-data="registrarModal()">
+<div class="w-full" x-data="registrarModal()">
     <div class="flex justify-between items-center my-6">
         <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">
             Registrar Management

@@ -1,30 +1,36 @@
 @extends('layouts.dashboard')
 
 @section('content')
-<div class="container px-6 mx-auto">
-    <h2 class="my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200">
-        All Document Requests
-    </h2>
+<div class="w-full">
+    <div class="flex flex-col gap-3 my-6 sm:flex-row sm:items-center" style="width: 100%;">
+        <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">
+            {{ $showArchived ? 'Archived Document Requests' : 'Active Document Requests' }}
+        </h2>
+        <div class="flex flex-col gap-2 sm:flex-row" style="margin-left: auto;">
+            <a href="{{ route('admin.requests.export', array_filter(['archived' => $showArchived ? 1 : null, 'status' => $status])) }}"
+                class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-purple-700 bg-purple-100 border border-transparent rounded-lg hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-100 dark:hover:bg-purple-800">
+                Export CSV
+            </a>
+            <form method="GET" action="{{ route('admin.requests.index') }}" class="flex flex-col gap-2 sm:flex-row">
+                @if($showArchived)
+                <input type="hidden" name="archived" value="1">
+                @endif
+                <select name="status" onchange="this.form.submit()"
+                    class="px-4 py-2 text-sm border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                    <option value="">All</option>
+                    @foreach($statusOptions as $value => $label)
+                    <option value="{{ $value }}" @selected($status === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </form>
+        </div>
+    </div>
 
     @if(session('success'))
     <div class="p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg">
         {{ session('success') }}
     </div>
     @endif
-
-    {{-- Tabs --}}
-    <div class="flex gap-2 mb-4">
-        <a href="{{ route('admin.requests.index') }}"
-            class="px-4 py-2 text-sm font-medium rounded-lg border transition-colors duration-150
-            {{ !$showArchived ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-50' }}">
-            Active Requests
-        </a>
-        <a href="{{ route('admin.requests.index', ['archived' => 1]) }}"
-            class="px-4 py-2 text-sm font-medium rounded-lg border transition-colors duration-150
-            {{ $showArchived ? 'bg-purple-600 text-white border-purple-600' : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:bg-gray-50' }}">
-            Archived
-        </a>
-    </div>
 
     <div class="w-full overflow-hidden rounded-lg shadow-xs mb-8">
         <div class="w-full overflow-x-auto">

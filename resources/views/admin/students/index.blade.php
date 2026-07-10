@@ -1,15 +1,31 @@
 @extends('layouts.dashboard')
 
 @section('content')
-<div class="container px-6 mx-auto" x-data="studentModal()">
-    <div class="flex justify-between items-center my-6">
+<div class="w-full" x-data="studentModal()">
+    <div class="flex flex-col gap-3 my-6 sm:flex-row sm:items-center" style="width: 100%;">
         <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">
             Student Management
         </h2>
-        <button @click="modal = 'create'"
-            class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
-            + Add Student
-        </button>
+        <div class="flex flex-col sm:flex-row sm:items-center" style="margin-left: auto; gap: 1rem;">
+            <a href="{{ route($routePrefix . '.students.export', array_filter(['student_type' => $selectedStudentType])) }}"
+                class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-purple-700 bg-purple-100 border border-transparent rounded-lg hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-100 dark:hover:bg-purple-800">
+                Export CSV
+            </a>
+            <form method="GET" action="{{ route($routePrefix . '.students.index') }}" class="flex flex-col gap-2 sm:flex-row">
+                <select name="student_type" onchange="this.form.submit()"
+                    class="px-4 py-2 text-sm border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple"
+                    style="min-width: 180px;">
+                    <option value="">All</option>
+                    @foreach($studentTypes as $type)
+                    <option value="{{ $type['value'] }}" @selected($selectedStudentType === $type['value'])>{{ $type['label'] }}</option>
+                    @endforeach
+                </select>
+            </form>
+            <button @click="modal = 'create'"
+                class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
+                + Add Student
+            </button>
+        </div>
     </div>
 
     @if(session('success'))
@@ -60,7 +76,7 @@
                                 {{ ['regular'=>'Regular Student','graduating'=>'Graduating Student','alumni'=>'Alumni'][$student->student_type] ?? ucfirst($student->student_type) }}
                             </span>
                         </td>
-                        <td class="px-4 py-3 text-sm">{{ $student->documentRequests->count() }}</td>
+                        <td class="px-4 py-3 text-sm">{{ $student->document_requests_count }}</td>
                         <td class="px-4 py-3">
                             <div class="flex items-center space-x-4 text-sm">
                                 <button

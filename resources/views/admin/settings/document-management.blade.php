@@ -1,7 +1,7 @@
 @extends('layouts.dashboard')
 
 @section('content')
-<div class="container px-6 mx-auto">
+<div class="w-full">
     <h2 class="my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200">Document Management</h2>
 
     @if(session('success'))

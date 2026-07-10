@@ -60,16 +60,38 @@
                         </a>
                     </li>
 
-                    <li class="relative px-6 py-3">
+                    <li class="relative px-6 py-3" x-data="{ open: {{ request()->routeIs('admin.requests.*') ? 'true' : 'false' }} }">
                         @if(request()->routeIs('admin.requests.*'))
-                        <span class="absolute inset-y-0 left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg" aria-hidden="true"></span>
+                        <span class="absolute left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg" style="top:0;height:2.75rem;" aria-hidden="true"></span>
                         @endif
-                        <a class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('admin.requests.*') ? 'text-gray-800 dark:text-gray-100' : '' }}" href="{{ route('admin.requests.index') }}">
-                            <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
-                                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        <button @click="open = !open"
+                            class="inline-flex items-center justify-between w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('admin.requests.*') ? 'text-gray-800 dark:text-gray-100' : '' }}">
+                            <span class="inline-flex items-center">
+                                <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                                </svg>
+                                <span class="ml-4">Document Requests</span>
+                            </span>
+                            <svg class="w-4 h-4 transition-transform duration-150" :class="{ 'rotate-180': open }" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
                             </svg>
-                            <span class="ml-4">All Requests</span>
-                        </a>
+                        </button>
+                        <ul x-show="open" x-transition:enter="transition ease-in-out duration-150" x-transition:enter-start="opacity-0 transform -translate-y-1" x-transition:enter-end="opacity-100">
+                            <li class="relative px-6 py-3">
+                                <a href="{{ route('admin.requests.index') }}"
+                                    class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('admin.requests.index') && !request()->boolean('archived') ? 'text-gray-800 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400' }}">
+                                    <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;{{ request()->routeIs('admin.requests.index') && !request()->boolean('archived') ? 'background-color:#7c3aed;' : 'border:2px solid #9ca3af;background-color:transparent;' }}"></span>
+                                    <span class="ml-4">Active Requests</span>
+                                </a>
+                            </li>
+                            <li class="relative px-6 py-3">
+                                <a href="{{ route('admin.requests.index', ['archived' => 1]) }}"
+                                    class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('admin.requests.index') && request()->boolean('archived') ? 'text-gray-800 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400' }}">
+                                    <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;{{ request()->routeIs('admin.requests.index') && request()->boolean('archived') ? 'background-color:#7c3aed;' : 'border:2px solid #9ca3af;background-color:transparent;' }}"></span>
+                                    <span class="ml-4">Archived Requests</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
 
                     <li class="relative px-6 py-3">
@@ -184,16 +206,38 @@
                             <span class="ml-4">Dashboard</span>
                         </a>
                     </li>
-                    <li class="relative px-6 py-3">
+                    <li class="relative px-6 py-3" x-data="{ open: {{ request()->routeIs('registrar.requests.*') ? 'true' : 'false' }} }">
                         @if(request()->routeIs('registrar.requests.*'))
-                        <span class="absolute inset-y-0 left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg" aria-hidden="true"></span>
+                        <span class="absolute left-0 w-1 bg-purple-600 rounded-tr-lg rounded-br-lg" style="top:0;height:2.75rem;" aria-hidden="true"></span>
                         @endif
-                        <a class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('registrar.requests.*') ? 'text-gray-800 dark:text-gray-100' : '' }}" href="{{ route('registrar.requests.index') }}">
-                            <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
-                                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        <button @click="open = !open"
+                            class="inline-flex items-center justify-between w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('registrar.requests.*') ? 'text-gray-800 dark:text-gray-100' : '' }}">
+                            <span class="inline-flex items-center">
+                                <svg class="w-5 h-5" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                                </svg>
+                                <span class="ml-4">Document Requests</span>
+                            </span>
+                            <svg class="w-4 h-4 transition-transform duration-150" :class="{ 'rotate-180': open }" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/>
                             </svg>
-                            <span class="ml-4">All Requests</span>
-                        </a>
+                        </button>
+                        <ul x-show="open" x-transition:enter="transition ease-in-out duration-150" x-transition:enter-start="opacity-0 transform -translate-y-1" x-transition:enter-end="opacity-100">
+                            <li class="relative px-6 py-3">
+                                <a href="{{ route('registrar.requests.index') }}"
+                                    class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('registrar.requests.index') && !request()->boolean('archived') ? 'text-gray-800 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400' }}">
+                                    <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;{{ request()->routeIs('registrar.requests.index') && !request()->boolean('archived') ? 'background-color:#7c3aed;' : 'border:2px solid #9ca3af;background-color:transparent;' }}"></span>
+                                    <span class="ml-4">Active Requests</span>
+                                </a>
+                            </li>
+                            <li class="relative px-6 py-3">
+                                <a href="{{ route('registrar.requests.index', ['archived' => 1]) }}"
+                                    class="inline-flex items-center w-full text-sm font-semibold transition-colors duration-150 hover:text-gray-800 dark:hover:text-gray-200 {{ request()->routeIs('registrar.requests.index') && request()->boolean('archived') ? 'text-gray-800 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400' }}">
+                                    <span style="width:8px;height:8px;border-radius:50%;flex-shrink:0;{{ request()->routeIs('registrar.requests.index') && request()->boolean('archived') ? 'background-color:#7c3aed;' : 'border:2px solid #9ca3af;background-color:transparent;' }}"></span>
+                                    <span class="ml-4">Archived Requests</span>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     <li class="relative px-6 py-3">
                         @if(request()->routeIs('registrar.students.*'))
@@ -231,7 +275,7 @@
         <div class="flex flex-col flex-1 w-full">
             <!-- Navbar -->
             <header class="z-10 py-4 bg-white shadow-md dark:bg-gray-800">
-                <div class="container flex items-center justify-between h-full px-6 mx-auto text-purple-600 dark:text-purple-300">
+                <div class="w-full flex items-center justify-between h-full px-6 mx-auto text-purple-600 dark:text-purple-300">
                     <!-- Mobile hamburger -->
                     <button class="p-1 mr-5 -ml-1 rounded-md md:hidden focus:outline-none focus:shadow-outline-purple" @click="toggleSideMenu" aria-label="Menu">
                         <svg class="w-6 h-6" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
@@ -257,54 +301,50 @@
                         </div>
                     </div>
 
-                    <ul class="flex items-center flex-shrink-0 space-x-6">
-                        <!-- Dark mode toggle -->
-                        <li class="flex">
-                            <button class="rounded-md focus:outline-none focus:shadow-outline-purple" @click="toggleTheme" aria-label="Toggle color mode">
-                                <template x-if="!dark">
-                                    <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
-                                    </svg>
-                                </template>
-                                <template x-if="dark">
-                                    <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
-                                    </svg>
-                                </template>
-                            </button>
-                        </li>
+                    <ul class="flex items-center flex-shrink-0 gap-5 ml-auto">
+                            <!-- Dark mode toggle -->
+                            <li class="flex mr-3">
+                                <button class="rounded-md focus:outline-none focus:shadow-outline-purple" @click="toggleTheme" aria-label="Toggle color mode">
+                                    <template x-if="!dark">
+                                        <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path>
+                                        </svg>
+                                    </template>
+                                    <template x-if="dark">
+                                        <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"></path>
+                                        </svg>
+                                    </template>
+                                </button>
+                            </li>
 
-                        <!-- Notifications bell -->
-                        @auth
-                        @php $unreadCount = auth()->user()->unreadNotifications->count(); @endphp
-                        <li class="relative">
-                            <button class="relative align-middle rounded-md focus:outline-none focus:shadow-outline-purple"
-                                @click="toggleNotificationsMenu" @keydown.escape="closeNotificationsMenu"
-                                aria-label="Notifications" aria-haspopup="true">
-                                <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
-                                    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
-                                </svg>
-                                @if($unreadCount > 0)
-                                <span class="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-xs font-bold text-white bg-red-500 border-2 border-white rounded-full dark:border-gray-800">
-                                    {{ $unreadCount > 9 ? '9+' : $unreadCount }}
-                                </span>
-                                @endif
-                            </button>
-                            <template x-if="isNotificationsMenuOpen">
-                                <div x-transition:leave="transition ease-in duration-150"
-                                    x-transition:leave-start="opacity-100"
-                                    x-transition:leave-end="opacity-0"
-                                    @click.away="closeNotificationsMenu"
-                                    @keydown.escape="closeNotificationsMenu"
-                                    class="absolute right-0 mt-2 bg-white border border-gray-100 rounded-lg shadow-lg dark:border-gray-700 dark:bg-gray-800 overflow-hidden"
-                                    style="z-index: 50; width: 380px;"
-                                    aria-label="submenu">
+                            <!-- Notifications bell -->
+                            @auth
+                            @php $unreadCount = auth()->user()->unreadNotifications->count(); @endphp
+                            <li class="relative mr-3">
+                                <button class="relative align-middle rounded-md focus:outline-none focus:shadow-outline-purple"
+                                    @click="toggleNotificationsMenu" @keydown.escape="closeNotificationsMenu"
+                                    aria-label="Notifications" aria-haspopup="true">
+                                    <svg class="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20"
+                                        style="{{ $unreadCount > 0 ? 'color:#ef4444;' : '' }}">
+                                        <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"></path>
+                                    </svg>
+                                </button>
+                                <template x-if="isNotificationsMenuOpen">
+                                    <div x-transition:leave="transition ease-in duration-150"
+                                        x-transition:leave-start="opacity-100"
+                                        x-transition:leave-end="opacity-0"
+                                        @click.away="closeNotificationsMenu"
+                                        @keydown.escape="closeNotificationsMenu"
+                                        class="absolute right-0 mt-2 bg-white border border-gray-100 rounded-lg shadow-lg dark:border-gray-700 dark:bg-gray-800 overflow-hidden"
+                                        style="z-index: 50; width: 380px;"
+                                        aria-label="submenu">
                                     <!-- Header -->
                                     <div class="flex justify-between items-center px-4 py-3 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
                                         <div class="flex items-center gap-2">
                                             <span class="text-sm font-semibold text-gray-700 dark:text-gray-200">Notifications</span>
                                             @if($unreadCount > 0)
-                                            <span class="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold text-white bg-purple-600 rounded-full">
+                                            <span class="inline-flex items-center justify-center px-3 py-0.5 ml-2 text-xs font-bold text-white bg-purple-600 rounded-full">
                                                 {{ $unreadCount }} new
                                             </span>
                                             @endif
@@ -348,9 +388,10 @@
                                         @endforelse
                                     </ul>
                                 </div>
-                            </template>
-                        </li>
-                        @endauth
+                                </template>
+                            </li>
+                            @endauth
+                    
 
                         <!-- Profile menu -->
                         <li class="relative">
@@ -398,7 +439,7 @@
 
             <!-- Main Content -->
             <main class="h-full pb-16 overflow-y-auto">
-                <div class="container px-6 pt-6 mx-auto grid">
+                <div class="w-full px-6 pt-6 mx-auto grid">
                     @yield('content')
                 </div>
             </main>

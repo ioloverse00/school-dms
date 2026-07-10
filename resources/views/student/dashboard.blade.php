@@ -1,7 +1,7 @@
 @extends('layouts.dashboard')
 
 @section('content')
-<div class="container mx-auto px-6 py-8">
+<div class="w-full py-8">
 
     {{-- Welcome Banner --}}
     <div class="rounded-lg shadow-xs mb-8 mt-6 overflow-hidden" style="background: linear-gradient(135deg, #7e3af2 0%, #5521b5 100%);">

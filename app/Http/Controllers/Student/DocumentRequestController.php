@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\DocumentRequest;
 use App\Models\DocumentType;
 use App\Models\SystemSetting;
+use App\Models\User;
+use App\Notifications\NewDocumentRequestNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -36,9 +38,7 @@ class DocumentRequestController extends Controller
             'copies'           => 'required|integer|min:1',
             'urgency'          => 'required|in:regular,urgent,very_urgent',
             'year_graduated'   => (auth()->user()->student_type === 'alumni' ? 'required' : 'nullable') . '|digits:4|integer|min:1990|max:' . date('Y'),
-            'valid_id'         => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
             'proof_of_payment' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
-            'request_form'     => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
         ]);
 
         $user = auth()->user();
@@ -79,7 +79,7 @@ class DocumentRequestController extends Controller
         ]);
 
         // Handle file uploads
-        $fileTypes = ['valid_id', 'proof_of_payment', 'request_form'];
+        $fileTypes = ['proof_of_payment'];
         foreach ($fileTypes as $fileType) {
             if ($request->hasFile($fileType)) {
                 $file = $request->file($fileType);
@@ -91,6 +91,11 @@ class DocumentRequestController extends Controller
                     'original_name' => $file->getClientOriginalName(),
                 ]);
             }
+        }
+
+        $staffUsers = User::role(['admin', 'registrar'])->get();
+        foreach ($staffUsers as $staffUser) {
+            $staffUser->notify(new NewDocumentRequestNotification($docRequest->loadMissing(['documentType', 'user'])));
         }
 
         return redirect()->route('student.requests.index')
