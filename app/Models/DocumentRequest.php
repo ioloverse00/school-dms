@@ -8,6 +8,8 @@ class DocumentRequest extends Model
 {
     protected $fillable = [
         'request_id',
+        'submission_token',
+        'submission_hash',
         'user_id',
         'document_type_id',
         'purpose',
@@ -23,6 +25,11 @@ class DocumentRequest extends Model
     protected $casts = [
         'archived_at' => 'datetime',
     ];
+
+    public function events()
+    {
+        return $this->hasMany(DocumentRequestEvent::class);
+    }
 
     public function user()
     {

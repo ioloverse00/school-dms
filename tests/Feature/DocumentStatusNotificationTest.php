@@ -46,6 +46,7 @@ class DocumentStatusNotificationTest extends TestCase
         ]);
 
         $response = $this->actingAs($admin)->put(route('admin.requests.update', $documentRequest->id), [
+            'edit_token' => \App\Support\RequestEditToken::for($documentRequest->fresh()),
             'status' => 'processing',
             'remarks' => 'Now processing',
         ]);
@@ -84,6 +85,7 @@ class DocumentStatusNotificationTest extends TestCase
         ]);
 
         $this->actingAs($admin)->put(route('admin.requests.update', $documentRequest->id), [
+            'edit_token' => \App\Support\RequestEditToken::for($documentRequest->fresh()),
             'status' => 'completed',
             'remarks' => 'Done',
         ]);

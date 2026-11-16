@@ -16,7 +16,8 @@
             <x-input-error :messages="$errors->get('email')" class="mt-2" />
         </div>
 
-        <div class="flex items-center justify-end mt-4">
+        <div class="mt-4" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+            <a class="portal-inline-link" href="{{ route('login') }}">&larr; Back to sign in</a>
             <x-primary-button>
                 {{ __('Email Password Reset Link') }}
             </x-primary-button>

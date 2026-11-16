@@ -13,15 +13,19 @@ class DashboardController extends Controller
     public function index()
     {
         // Stats cards
-        $totalRequests      = DocumentRequest::count();
-        $pendingRequests    = DocumentRequest::where('status', 'pending_verification')->count();
-        $processingRequests = DocumentRequest::where('status', 'processing')->count();
+        $totalRequests      = \App\Support\DocumentRequestListing::query(false)->count();
+        $pendingRequests    = \App\Support\DocumentRequestListing::query(false, 'pending_review')->count();
+        $processingRequests = \App\Support\DocumentRequestListing::query(false, 'processing')->count();
         $completedRequests  = DocumentRequest::where('status', 'completed')->count();
         $totalStudents      = User::role('student')->count();
 
+        $readyRequests = \App\Support\DocumentRequestListing::query(false, 'ready_for_release')->count();
+
         // Priority queue
         $recentRequests = DocumentRequest::with(['user', 'documentType'])
-            ->orderBy('priority_score', 'desc')
+            ->whereNull('archived_at')
+            ->whereIn('status', \App\Support\RequestStatus::ACTIONABLE)
+            ->orderByDesc('priority_score')->orderBy('created_at')->orderBy('id')
             ->take(5)
             ->get();
 
@@ -38,7 +42,7 @@ class DashboardController extends Controller
         // Monthly trend — last 6 months
         $months = collect();
         for ($i = 5; $i >= 0; $i--) {
-            $months->push(Carbon::now()->subMonths($i));
+            $months->push(Carbon::now()->startOfMonth()->subMonths($i));
         }
 
         $driver = DB::connection()->getDriverName();
@@ -54,7 +58,7 @@ class DashboardController extends Controller
                 DB::raw($monthExpr . ' as month'),
                 DB::raw('count(*) as total')
             )
-            ->where('created_at', '>=', Carbon::now()->subMonths(6)->startOfMonth())
+            ->where('created_at', '>=', Carbon::now()->startOfMonth()->subMonths(5))
             ->groupBy('year', 'month')
             ->get()
             ->keyBy(fn($r) => $r->year . '-' . $r->month);
@@ -65,7 +69,7 @@ class DashboardController extends Controller
         // Linear regression on overall monthly totals → forecast next 3 months
         $forecastLabels = [];
         for ($i = 1; $i <= 3; $i++) {
-            $forecastLabels[] = Carbon::now()->addMonths($i)->format('M Y');
+            $forecastLabels[] = Carbon::now()->startOfMonth()->addMonths($i)->format('M Y');
         }
         $mv   = array_map('intval', $monthlyValues);
         $fn   = count($mv);
@@ -92,18 +96,21 @@ class DashboardController extends Controller
         $certificationCount = optional($categoryBreakdown->get('certification'))->total ?? 0;
 
         // Trending document — most requested in last 30 days
-        $trendingDoc = DocumentRequest::select('document_type_id', DB::raw('count(*) as total'))
+        $trendingDocuments = DocumentRequest::select('document_type_id', DB::raw('count(*) as total'))
             ->where('created_at', '>=', Carbon::now()->subDays(30))
             ->groupBy('document_type_id')
             ->orderBy('total', 'desc')
+            ->orderBy('document_type_id')
             ->with('documentType')
-            ->first();
+            ->take(2)->get();
+        $trendingDoc = $trendingDocuments->first();
+        $secondTrendingDoc = $trendingDocuments->get(1);
 
         return view('registrar.dashboard', compact(
             'totalRequests', 'pendingRequests', 'processingRequests',
-            'completedRequests', 'totalStudents', 'recentRequests',
+            'completedRequests', 'readyRequests', 'totalStudents', 'recentRequests',
             'documentDemand', 'monthlyLabels', 'monthlyValues',
-            'academicCount', 'certificationCount', 'trendingDoc',
+            'academicCount', 'certificationCount', 'trendingDoc', 'secondTrendingDoc',
             'forecastLabels', 'overallForecastValues'
         ));
     }

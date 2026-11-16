@@ -1,13 +1,16 @@
 @extends('layouts.dashboard')
 
 @section('content')
+@error('account')
+<div class="alert alert-danger" role="alert">{{ $message }}</div>
+@enderror
 <div class="w-full" x-data="registrarModal()">
     <div class="flex justify-between items-center my-6">
         <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">
             Registrar Management
         </h2>
         <button @click="modal = 'create'"
-            class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
+            class="btn btn-primary px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
             + Add Registrar
         </button>
     </div>
@@ -18,9 +21,9 @@
     </div>
     @endif
 
-    <div class="w-full overflow-hidden rounded-lg shadow-xs mb-8">
-        <div class="w-full overflow-x-auto">
-            <table class="w-full whitespace-no-wrap">
+    <div class="card portal-card mb-8">
+        <div class="portal-table-wrap">
+            <table class="table table-custom portal-table">
                 <thead>
                     <tr class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b dark:border-gray-700 bg-gray-50 dark:text-gray-400 dark:bg-gray-800">
                         <th class="px-4 py-3">Registrar</th>
@@ -86,7 +89,7 @@
         x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
-        class="fixed inset-0 z-30 flex items-end bg-black bg-opacity-50 sm:items-center sm:justify-center">
+        class="spark-dialog-backdrop fixed inset-0 z-30 flex items-end bg-black bg-opacity-50 sm:items-center sm:justify-center">
         <div
             x-show="modal === 'create'"
             x-transition:enter="transition ease-out duration-150"
@@ -123,15 +126,15 @@
 
                 <label class="block mb-6">
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Full Name <span class="text-red-500">*</span></span>
-                    <input type="text" name="name" value="{{ old('name') }}" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                    <input type="text" name="name" value="{{ old('name') }}" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                 </label>
                 <label class="block mb-6">
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Email <span class="text-red-500">*</span></span>
-                    <input type="email" name="email" value="{{ old('email') }}" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                    <input type="email" name="email" value="{{ old('email') }}" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                 </label>
                 <label class="block mb-6">
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Password <span class="text-red-500">*</span></span>
-                    <input type="password" name="password" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                    <input type="password" name="password" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                 </label>
 
                 <footer class="flex flex-col items-center justify-end px-6 py-3 -mx-6 -mb-4 space-y-4 sm:space-y-0 sm:space-x-6 sm:flex-row bg-gray-50 dark:bg-gray-800">
@@ -140,7 +143,7 @@
                         Cancel
                     </button>
                     <button type="submit"
-                        class="w-full px-5 py-3 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg sm:w-auto sm:px-4 sm:py-2 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
+                        class="btn btn-primary w-full px-5 py-3 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg sm:w-auto sm:px-4 sm:py-2 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
                         Create Registrar
                     </button>
                 </footer>
@@ -158,7 +161,7 @@
         x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
-        class="fixed inset-0 z-30 flex items-end bg-black bg-opacity-50 sm:items-center sm:justify-center">
+        class="spark-dialog-backdrop fixed inset-0 z-30 flex items-end bg-black bg-opacity-50 sm:items-center sm:justify-center">
         <div
             x-show="modal === 'edit'"
             x-transition:enter="transition ease-out duration-150"
@@ -197,15 +200,15 @@
 
                 <label class="block mb-6">
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Full Name <span class="text-red-500">*</span></span>
-                    <input type="text" name="name" x-model="editData.name" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                    <input type="text" name="name" x-model="editData.name" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                 </label>
                 <label class="block mb-6">
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Email <span class="text-red-500">*</span></span>
-                    <input type="email" name="email" x-model="editData.email" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                    <input type="email" name="email" x-model="editData.email" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                 </label>
                 <label class="block mb-6">
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-400">New Password (leave blank to keep)</span>
-                    <input type="password" name="password" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                    <input type="password" name="password" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                 </label>
 
                 <footer class="flex flex-col items-center justify-end px-6 py-3 -mx-6 -mb-4 space-y-4 sm:space-y-0 sm:space-x-6 sm:flex-row bg-gray-50 dark:bg-gray-800">
@@ -214,7 +217,7 @@
                         Cancel
                     </button>
                     <button type="submit"
-                        class="w-full px-5 py-3 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg sm:w-auto sm:px-4 sm:py-2 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
+                        class="btn btn-primary w-full px-5 py-3 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg sm:w-auto sm:px-4 sm:py-2 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
                         Update Registrar
                     </button>
                 </footer>
@@ -232,7 +235,7 @@
         x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
-        class="fixed inset-0 z-30 flex items-end bg-black bg-opacity-50 sm:items-center sm:justify-center">
+        class="spark-dialog-backdrop fixed inset-0 z-30 flex items-end bg-black bg-opacity-50 sm:items-center sm:justify-center">
         <div
             x-show="modal === 'delete'"
             x-transition:enter="transition ease-out duration-150"

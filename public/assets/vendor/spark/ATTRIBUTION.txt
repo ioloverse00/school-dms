@@ -1,0 +1,6 @@
+Spark Admin v1.0.0. Source: D:/templates/spark-admin-v1.0.0
+Copyright Spark Admin Team. Distributed by ThemeWagon.
+Bundled README states MIT; documentation states attribution-required free edition.
+Keep visible footer credit: Made with heart by Spark Admin (https://sparkadminpro.gumroad.com/), distributed by ThemeWagon (https://www.themewagon.com/).
+No license grant beyond the original package notices is asserted by this adaptation.
+Bootstrap and Bootstrap Icons retain their upstream copyright/license headers.

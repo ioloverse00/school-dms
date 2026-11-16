@@ -5,7 +5,7 @@
         </h2>
 
         <p class="mt-1 text-sm text-gray-600">
-            {{ __('Once your account is deleted, all of its resources and data will be permanently deleted. Before deleting your account, please download any data or information that you wish to retain.') }}
+            {{ __('Only unused accounts can be deleted. Accounts with document requests or recorded staff actions, and the last administrator account, must be retained.') }}
         </p>
     </header>
 
@@ -24,8 +24,10 @@
             </h2>
 
             <p class="mt-1 text-sm text-gray-600">
-                {{ __('Once your account is deleted, all of its resources and data will be permanently deleted. Please enter your password to confirm you would like to permanently delete your account.') }}
+                {{ __('Enter your password to permanently delete this unused account. Deletion will be blocked if school records depend on it or it is the last administrator account.') }}
             </p>
+
+            <x-input-error :messages="$errors->userDeletion->get('account')" class="mt-2" />
 
             <div class="mt-6">
                 <x-input-label for="password" value="{{ __('Password') }}" class="sr-only" />

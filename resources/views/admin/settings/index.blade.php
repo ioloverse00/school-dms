@@ -5,6 +5,7 @@
     <h2 class="my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200">
         System Settings
     </h2>
+    <p class="mb-4"><a class="btn btn-outline-secondary" href="{{ route('admin.settings.academic-calendar') }}">Academic calendar</a></p>
 
     @if(session('success'))
     <div class="p-4 mb-6 text-sm text-green-700 bg-green-100 rounded-lg">
@@ -15,7 +16,7 @@
     <div id="programs" style="display:grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start;">
 
         {{-- ===== PROGRAMS / COURSES ===== --}}
-        <div class="bg-white rounded-lg shadow-xs dark:bg-gray-800">
+        <div class="card spark-form-card bg-white rounded-lg shadow-xs dark:bg-gray-800">
             <div class="px-6 py-4 border-b dark:border-gray-700">
                 <h3 class="text-base font-semibold text-gray-700 dark:text-gray-200">Programs / Courses</h3>
                 <p class="text-xs text-gray-500 mt-1">Manage the list of available academic programs.</p>
@@ -26,10 +27,10 @@
                 <form action="{{ route('admin.settings.programs.add') }}" method="POST" class="flex items-center gap-3">
                     @csrf
                     <input type="text" name="program" placeholder="e.g. BS Data Science"
-                        class="block flex-1 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple"
+                        class="form-control-custom spark-field block flex-1 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple"
                         required>
                     <button type="submit"
-                        class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple whitespace-nowrap"
+                        class="btn btn-primary px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple whitespace-nowrap"
                         style="margin-left: 0.75rem;">
                         + Add
                     </button>
@@ -49,7 +50,7 @@
                         @method('DELETE')
                         <input type="hidden" name="program" value="{{ $program }}">
                         <button type="submit"
-                            onclick="return confirm('Remove \'{{ addslashes($program) }}\'?')"
+                            data-confirm="Remove {{ $program }}?"
                             style="background:transparent; border:none; cursor:pointer; color:#ef4444; padding:6px;"
                             aria-label="Delete">
                             <svg style="width:1rem;height:1rem;" fill="currentColor" viewBox="0 0 20 20">
@@ -69,7 +70,7 @@
         </div>
 
         {{-- ===== AI FORECAST PROMPT ===== --}}
-        <div class="bg-white rounded-lg shadow-xs dark:bg-gray-800">
+        <div class="card spark-form-card bg-white rounded-lg shadow-xs dark:bg-gray-800">
             <div class="px-6 py-4 border-b dark:border-gray-700">
                 <h3 class="text-base font-semibold text-gray-700 dark:text-gray-200">AI Forecast Prompt</h3>
                 <p class="text-xs text-gray-500 mt-1">Custom instructions Gemini will follow when forecasting trends.</p>
@@ -81,7 +82,7 @@
                     <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">Prompt (optional)</label>
                     <textarea name="prompt" rows="8"
                         placeholder="Example: Graduation season is June–July; expect more Transcript of Records and Certificate of Graduation requests."
-                        class="block w-full text-sm form-textarea dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple rounded-lg">{{ old('prompt', $aiForecastPrompt ?? '') }}</textarea>
+                        class="form-control-custom spark-field block w-full text-sm form-textarea dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple rounded-lg">{{ old('prompt', $aiForecastPrompt ?? '') }}</textarea>
                     @error('prompt')
                         <p class="mt-2 text-xs text-red-600">{{ $message }}</p>
                     @enderror
@@ -90,7 +91,7 @@
 
                 <div class="px-6 py-4 border-t dark:border-gray-700">
                     <button type="submit"
-                        class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
+                        class="btn btn-primary px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
                         Save Prompt
                     </button>
                 </div>
@@ -99,7 +100,7 @@
 
         {{-- ===== STUDENT TYPES ===== --}}
         <div id="student-types">
-            <div class="bg-white rounded-lg shadow-xs dark:bg-gray-800 mb-6">
+            <div class="card spark-form-card bg-white rounded-lg shadow-xs dark:bg-gray-800 mb-6">
                 <div class="px-6 py-4 border-b dark:border-gray-700">
                     <h3 class="text-base font-semibold text-gray-700 dark:text-gray-200">Student Categories</h3>
                     <p class="text-xs text-gray-500 mt-1">Manage student classification types used in requests and priority scoring.</p>
@@ -113,7 +114,7 @@
                             <div>
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Value (no spaces)</label>
                                 <input type="text" name="type_value" placeholder="e.g. transferee"
-                                    class="block w-full text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple"
+                                    class="form-control-custom spark-field block w-full text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple"
                                     required>
                                 @error('type_value')
                                 <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
@@ -122,7 +123,7 @@
                             <div>
                                 <label class="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">Display Label</label>
                                 <input type="text" name="type_label" placeholder="e.g. Transferee"
-                                    class="block w-full text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple"
+                                    class="form-control-custom spark-field block w-full text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple"
                                     required>
                                 @error('type_label')
                                 <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
@@ -130,7 +131,7 @@
                             </div>
                         </div>
                         <button type="submit"
-                            class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple"
+                            class="btn btn-primary px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple"
                             style="margin-top: 0.75rem;">
                             + Add Student Type
                         </button>
@@ -150,7 +151,7 @@
                             @method('DELETE')
                             <input type="hidden" name="type_value" value="{{ $type['value'] }}">
                             <button type="submit"
-                                onclick="return confirm('Remove \'{{ addslashes($type['label']) }}\'?')"
+                                data-confirm="Remove {{ $type['label'] }}?"
                                 style="background:transparent; border:none; cursor:pointer; color:#ef4444; padding:6px;"
                                 aria-label="Delete">
                                 <svg style="width:1rem;height:1rem;" fill="currentColor" viewBox="0 0 20 20">
@@ -179,7 +180,7 @@
     <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; align-items: start;">
 
         {{-- Document Type Weights --}}
-        <div class="bg-white rounded-lg shadow-xs dark:bg-gray-800">
+        <div class="card spark-form-card bg-white rounded-lg shadow-xs dark:bg-gray-800">
             <div class="px-6 py-4 border-b dark:border-gray-700">
                 <h4 class="text-base font-semibold text-gray-700 dark:text-gray-200">Document Type Weight</h4>
                 <p class="text-xs text-gray-500 mt-1">Weight added to priority score per document type.</p>
@@ -191,13 +192,13 @@
                     <div class="flex items-center justify-between px-6 py-3 gap-4">
                         <span class="text-sm text-gray-700 dark:text-gray-300 flex-1">{{ $docType->name }}</span>
                         <input type="number" name="weights[{{ $docType->id }}]" value="{{ $docType->weight }}" min="1" max="20"
-                            class="w-16 text-sm text-center form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple rounded-lg">
+                            class="form-control-custom spark-field w-16 text-sm text-center form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple rounded-lg">
                     </div>
                     @endforeach
                 </div>
                 <div class="px-6 py-4 border-t dark:border-gray-700">
                     <button type="submit"
-                        class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
+                        class="btn btn-primary px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
                         Save Weights
                     </button>
                 </div>
@@ -205,7 +206,7 @@
         </div>
 
         {{-- Student Category Weights --}}
-        <div class="bg-white rounded-lg shadow-xs dark:bg-gray-800">
+        <div class="card spark-form-card bg-white rounded-lg shadow-xs dark:bg-gray-800">
             <div class="px-6 py-4 border-b dark:border-gray-700">
                 <h4 class="text-base font-semibold text-gray-700 dark:text-gray-200">Student Category Weight</h4>
                 <p class="text-xs text-gray-500 mt-1">Weight added to priority score per student category.</p>
@@ -217,13 +218,13 @@
                     <div class="flex items-center justify-between px-6 py-3 gap-4">
                         <span class="text-sm text-gray-700 dark:text-gray-300 flex-1 capitalize">{{ str_replace('_', ' ', $category) }}</span>
                         <input type="number" name="weights[{{ $category }}]" value="{{ $weight }}" min="1" max="20"
-                            class="w-16 text-sm text-center form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple rounded-lg">
+                            class="form-control-custom spark-field w-16 text-sm text-center form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple rounded-lg">
                     </div>
                     @endforeach
                 </div>
                 <div class="px-6 py-4 border-t dark:border-gray-700">
                     <button type="submit"
-                        class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
+                        class="btn btn-primary px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
                         Save Weights
                     </button>
                 </div>
@@ -231,7 +232,7 @@
         </div>
 
         {{-- Urgency Level Values --}}
-        <div class="bg-white rounded-lg shadow-xs dark:bg-gray-800">
+        <div class="card spark-form-card bg-white rounded-lg shadow-xs dark:bg-gray-800">
             <div class="px-6 py-4 border-b dark:border-gray-700">
                 <h4 class="text-base font-semibold text-gray-700 dark:text-gray-200">Urgency Level</h4>
                 <p class="text-xs text-gray-500 mt-1">Formula: <span class="font-mono">(Urgency Weight × Urgency Level) + Student Weight + Document Weight</span></p>
@@ -245,9 +246,9 @@
                 <div class="divide-y dark:divide-gray-700">
                     @foreach($urgencyLevels as $level => $value)
                     <div class="flex items-center justify-between px-6 py-3 gap-4">
-                        <span class="text-sm text-gray-700 dark:text-gray-300 flex-1 capitalize">{{ ucwords(str_replace('_', ' ', $level)) }}</span>
+                        <span class="text-sm text-gray-700 dark:text-gray-300 flex-1 capitalize">{{ \App\Support\RequestUrgency::label($level) }}</span>
                         <input type="number" name="levels[{{ $level }}]" value="{{ $value }}" min="1" max="10"
-                            class="w-16 text-sm text-center form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple rounded-lg">
+                            class="form-control-custom spark-field w-16 text-sm text-center form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple rounded-lg">
                     </div>
                     @endforeach
                 </div>
@@ -258,11 +259,11 @@
                 <div class="flex items-center justify-between px-6 py-3 gap-4">
                     <span class="text-sm text-gray-700 dark:text-gray-300 flex-1">Urgency Weight</span>
                     <input type="number" name="urgency_weight" value="{{ $urgencyWeight }}" min="1" max="20"
-                        class="w-16 text-sm text-center form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple rounded-lg">
+                        class="form-control-custom spark-field w-16 text-sm text-center form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple rounded-lg">
                 </div>
                 <div class="px-6 py-4 border-t dark:border-gray-700">
                     <button type="submit"
-                        class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
+                        class="btn btn-primary px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
                         Save
                     </button>
                 </div>

@@ -13,7 +13,7 @@ class DashboardController extends Controller
 
         $totalRequests     = DocumentRequest::where('user_id', $user->id)->count();
         $pendingRequests   = DocumentRequest::where('user_id', $user->id)
-                                ->whereIn('status', ['pending_requirements', 'pending_verification'])->count();
+                                ->whereIn('status', \App\Support\RequestStatus::PENDING)->count();
         $processingRequests = DocumentRequest::where('user_id', $user->id)
                                 ->where('status', 'processing')->count();
         $readyRequests     = DocumentRequest::where('user_id', $user->id)

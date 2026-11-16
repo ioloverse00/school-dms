@@ -5,22 +5,28 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentRequest;
 use App\Models\DocumentType;
-use App\Models\SystemSetting;
-use App\Models\User;
-use App\Notifications\NewDocumentRequestNotification;
-use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 class DocumentRequestController extends Controller
 {
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
+        $search = \App\Support\ListSearch::term($request);
+        $filters = $request->validate([
+            'status' => ['nullable', \Illuminate\Validation\Rule::in(array_keys(\App\Support\RequestStatus::LABELS))],
+            'document_type_id' => ['nullable', 'integer', 'exists:document_types,id'],
+            'urgency' => ['nullable', \Illuminate\Validation\Rule::in(array_keys(\App\Support\RequestUrgency::LABELS))],
+        ]);
         $requests = DocumentRequest::where('user_id', auth()->id())
+            ->when($filters['status'] ?? null, fn ($q, $value) => $q->where('status', $value))
+            ->when($filters['document_type_id'] ?? null, fn ($q, $value) => $q->where('document_type_id', $value))
+            ->when($filters['urgency'] ?? null, fn ($q, $value) => $q->where('urgency', $value))
+            ->when($search !== '', fn ($q) => \App\Support\DocumentRequestListing::search($q, $search, false))
             ->with('documentType')
             ->orderBy('created_at', 'desc')
-            ->paginate(10);
+            ->orderByDesc('id')->paginate(10)->withQueryString();
 
-        return view('student.requests.index', compact('requests'));
+        $documentTypes = DocumentType::orderBy('name')->get();
+        return view('student.requests.index', compact('requests', 'search', 'filters', 'documentTypes'));
     }
 
     public function create()
@@ -30,72 +36,19 @@ class DocumentRequestController extends Controller
         return view('student.requests.create', compact('documentTypes', 'user'));
     }
 
-    public function store(Request $request)
+    public function store(\App\Http\Requests\StoreDocumentRequest $request, \App\Services\SubmitDocumentRequest $submit)
     {
-        $request->validate([
-            'document_type_id' => 'required|exists:document_types,id',
-            'purpose'          => 'required|string',
-            'copies'           => 'required|integer|min:1',
-            'urgency'          => 'required|in:regular,urgent,very_urgent',
-            'year_graduated'   => (auth()->user()->student_type === 'alumni' ? 'required' : 'nullable') . '|digits:4|integer|min:1990|max:' . date('Y'),
-            'proof_of_payment' => 'required|file|mimes:pdf,jpg,jpeg,png|max:10240',
-        ]);
+        try {
+            $docRequest = $submit->handle($request->user(), $request->validated(), $request->file('proof_of_payment'));
+        } catch (\Illuminate\Validation\ValidationException $exception) {
+            throw $exception;
+        } catch (\Throwable $exception) {
+            \Illuminate\Support\Facades\Log::warning('Document request submission failed.', [
+                'user_id' => $request->user()->id, 'error_type' => $exception::class,
+            ]);
 
-        $user = auth()->user();
-
-        // Save year_graduated back to the user profile if alumni and changed
-        if ($user->student_type === 'alumni' && $user->year_graduated !== $request->year_graduated) {
-            $user->year_graduated = $request->year_graduated;
-            $user->save();
-        }
-
-        // Check alumni-only restriction
-        $documentType = DocumentType::find($request->document_type_id);
-        if ($documentType->alumni_only && $user->student_type !== 'alumni') {
-            return back()->withErrors(['document_type_id' => 'Diploma Copy can only be requested by alumni students.'])->withInput();
-        }
-
-        // Calculate priority score (weights configurable via settings)
-        $urgencyLevels  = SystemSetting::get('urgency_level_values', ['regular' => 1, 'urgent' => 2, 'very_urgent' => 3]);
-        $studentWeights = SystemSetting::get('student_category_weights', ['regular' => 2, 'graduating' => 5, 'alumni' => 3]);
-        $urgencyWeight  = SystemSetting::get('urgency_weight', 5);
-
-        $urgencyScore   = ($urgencyLevels[$request->urgency] ?? 1) * $urgencyWeight;
-        $studentScore   = $studentWeights[$user->student_type] ?? 1;
-        $documentScore  = $documentType->weight;
-        $priorityScore = $urgencyScore + $studentScore + $documentScore;
-
-        // Create request
-        $docRequest = DocumentRequest::create([
-            'request_id' => 'REQ-' . date('Y') . '-' . strtoupper(\Illuminate\Support\Str::random(5)),
-            'user_id' => $user->id,
-            'document_type_id' => $request->document_type_id,
-            'purpose' => $request->purpose,
-            'copies' => $request->copies,
-            'urgency' => $request->urgency,
-            'student_category' => $user->student_type,
-            'priority_score' => $priorityScore,
-            'status' => 'pending_verification',
-        ]);
-
-        // Handle file uploads
-        $fileTypes = ['proof_of_payment'];
-        foreach ($fileTypes as $fileType) {
-            if ($request->hasFile($fileType)) {
-                $file = $request->file($fileType);
-                $path = $file->store('request_files', 'public');
-
-                $docRequest->requiredFiles()->create([
-                    'file_type' => $fileType,
-                    'file_path' => $path,
-                    'original_name' => $file->getClientOriginalName(),
-                ]);
-            }
-        }
-
-        $staffUsers = User::role(['admin', 'registrar'])->get();
-        foreach ($staffUsers as $staffUser) {
-            $staffUser->notify(new NewDocumentRequestNotification($docRequest->loadMissing(['documentType', 'user'])));
+            return back()->withErrors(['submission' => 'Your request could not be saved. Please attach the proof again and retry.'])
+                ->withInput($request->except('proof_of_payment'));
         }
 
         return redirect()->route('student.requests.index')
@@ -104,7 +57,10 @@ class DocumentRequestController extends Controller
 
     public function show($id)
     {
-        $documentRequest = DocumentRequest::with('documentType', 'requiredFiles', 'user')->findOrFail($id);
-        return view('student.requests.show', compact('documentRequest'));
+        $documentRequest = auth()->user()->documentRequests()
+            ->with('documentType', 'requiredFiles', 'user')
+            ->findOrFail($id);
+        $history = $documentRequest->events()->latest('id')->paginate(20, ['*'], 'history_page');
+        return view('student.requests.show', compact('documentRequest', 'history'));
     }
 }

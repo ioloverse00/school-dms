@@ -1,19 +1,24 @@
 @extends('layouts.dashboard')
 
 @section('content')
+@php($categoryLabels = array_column($studentTypes, 'label', 'value'))
+@error('account')
+<div class="alert alert-danger" role="alert">{{ $message }}</div>
+@enderror
 <div class="w-full" x-data="studentModal()">
     <div class="flex flex-col gap-3 my-6 sm:flex-row sm:items-center" style="width: 100%;">
         <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200">
             Student Management
         </h2>
         <div class="flex flex-col sm:flex-row sm:items-center" style="margin-left: auto; gap: 1rem;">
-            <a href="{{ route($routePrefix . '.students.export', array_filter(['student_type' => $selectedStudentType])) }}"
+            <a href="{{ route($routePrefix . '.students.export', array_filter(['student_type' => $selectedStudentType, 'q' => $search], fn ($value) => $value !== null && $value !== '')) }}"
                 class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-purple-700 bg-purple-100 border border-transparent rounded-lg hover:bg-purple-200 dark:bg-purple-900 dark:text-purple-100 dark:hover:bg-purple-800">
                 Export CSV
             </a>
             <form method="GET" action="{{ route($routePrefix . '.students.index') }}" class="flex flex-col gap-2 sm:flex-row">
-                <select name="student_type" onchange="this.form.submit()"
-                    class="px-4 py-2 text-sm border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple"
+                <input type="hidden" name="q" value="{{ $search }}">
+                <select aria-label="Filter by student category" name="student_type" onchange="this.form.submit()"
+                    class="form-select-custom spark-field px-4 py-2 text-sm border-gray-300 rounded-lg dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple"
                     style="min-width: 180px;">
                     <option value="">All</option>
                     @foreach($studentTypes as $type)
@@ -22,7 +27,7 @@
                 </select>
             </form>
             <button @click="modal = 'create'"
-                class="px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
+                class="btn btn-primary px-4 py-2 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg active:bg-purple-600 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
                 + Add Student
             </button>
         </div>
@@ -34,9 +39,9 @@
     </div>
     @endif
 
-    <div class="w-full overflow-hidden rounded-lg shadow-xs mb-8">
-        <div class="w-full overflow-x-auto">
-            <table class="w-full whitespace-no-wrap">
+    <div class="card portal-card mb-8">
+        <div class="portal-table-wrap">
+            <table class="table table-custom portal-table">
                 <thead>
                     <tr class="text-xs font-semibold tracking-wide text-left text-gray-500 uppercase border-b dark:border-gray-700 bg-gray-50 dark:text-gray-400 dark:bg-gray-800">
                         <th class="px-4 py-3">Student</th>
@@ -54,7 +59,7 @@
                         <td class="px-4 py-3">
                             <div class="flex items-center text-sm">
                                 <div class="relative hidden w-8 h-8 mr-3 rounded-full md:block">
-                                    <div style="width:100%;height:100%;border-radius:50%;background:#7e3af2;display:flex;align-items:center;justify-content:center;">
+                                    <div style="width:100%;height:100%;border-radius:50%;background:#267363;display:flex;align-items:center;justify-content:center;">
                                         <span style="color:white;font-size:0.65rem;font-weight:700;line-height:1;">{{ strtoupper(substr($student->name,0,2)) }}</span>
                                     </div>
                                     <div class="absolute inset-0 rounded-full shadow-inner" aria-hidden="true"></div>
@@ -73,7 +78,7 @@
                                 {{ $student->student_type == 'graduating' ? 'text-green-700 bg-green-100' : '' }}
                                 {{ $student->student_type == 'alumni' ? 'text-blue-700 bg-blue-100' : '' }}
                                 {{ $student->student_type == 'regular' ? 'text-gray-700 bg-gray-100' : '' }}">
-                                {{ ['regular'=>'Regular Student','graduating'=>'Graduating Student','alumni'=>'Alumni'][$student->student_type] ?? ucfirst($student->student_type) }}
+                                {{ $categoryLabels[$student->student_type] ?? ucfirst($student->student_type) }}
                             </span>
                         </td>
                         <td class="px-4 py-3 text-sm">{{ $student->document_requests_count }}</td>
@@ -125,7 +130,7 @@
         x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
-        class="fixed inset-0 z-30 flex items-end bg-black bg-opacity-50 sm:items-center sm:justify-center">
+        class="spark-dialog-backdrop fixed inset-0 z-30 flex items-end bg-black bg-opacity-50 sm:items-center sm:justify-center">
         <div
             x-show="modal === 'create'"
             x-transition:enter="transition ease-out duration-150"
@@ -156,36 +161,36 @@
             </div>
             @endif
 
-            <form action="{{ route('admin.students.store') }}" method="POST">
+            <form action="{{ route($routePrefix . '.students.store') }}" method="POST">
                 @csrf
                 <input type="hidden" name="_modal" value="create">
 
                 <div class="grid grid-cols-1 gap-6 mb-6 sm:grid-cols-2">
                     <label class="block">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Student ID <span class="text-red-500">*</span></span>
-                        <input type="text" name="student_id" value="{{ old('student_id') }}" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                        <input type="text" name="student_id" value="{{ old('student_id') }}" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                     </label>
                     <label class="block">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Full Name <span class="text-red-500">*</span></span>
-                        <input type="text" name="name" value="{{ old('name') }}" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                        <input type="text" name="name" value="{{ old('name') }}" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                     </label>
                 </div>
 
                 <div class="grid grid-cols-1 gap-6 mb-6 sm:grid-cols-2">
                     <label class="block">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Email <span class="text-red-500">*</span></span>
-                        <input type="email" name="email" value="{{ old('email') }}" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                        <input type="email" name="email" value="{{ old('email') }}" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                     </label>
                     <label class="block">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Password <span class="text-red-500">*</span></span>
-                        <input type="password" name="password" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                        <input type="password" name="password" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                     </label>
                 </div>
 
                 <div class="grid grid-cols-1 gap-6 mb-6 sm:grid-cols-2">
                     <label class="block">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Course / Program <span class="text-red-500">*</span></span>
-                        <select name="course" class="block w-full mt-2 text-sm form-select dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                        <select name="course" class="form-select-custom spark-field block w-full mt-2 text-sm form-select dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                             <option value="">-- Select a program --</option>
                             @foreach($programs as $program)
                             <option value="{{ $program }}" {{ old('course') == $program ? 'selected' : '' }}>{{ $program }}</option>
@@ -194,13 +199,14 @@
                     </label>
                     <label class="block">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Year Graduated (if Alumni)</span>
-                        <input type="text" name="year_graduated" value="{{ old('year_graduated') }}" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                        <input type="text" name="year_graduated" value="{{ old('year_graduated') }}" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                     </label>
                 </div>
 
                 <label class="block mb-6">
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Student Category <span class="text-red-500">*</span></span>
-                    <select name="student_type" class="block w-full mt-2 text-sm form-select dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                    <input type="hidden" name="q" value="{{ $search }}">
+                <select aria-label="Filter by student category" name="student_type" class="form-select-custom spark-field block w-full mt-2 text-sm form-select dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                         @foreach($studentTypes as $type)
                         <option value="{{ $type['value'] }}" {{ old('student_type') == $type['value'] ? 'selected' : '' }}>{{ $type['label'] }}</option>
                         @endforeach
@@ -213,7 +219,7 @@
                         Cancel
                     </button>
                     <button type="submit"
-                        class="w-full px-5 py-3 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg sm:w-auto sm:px-4 sm:py-2 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
+                        class="btn btn-primary w-full px-5 py-3 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg sm:w-auto sm:px-4 sm:py-2 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
                         Create Student
                     </button>
                 </footer>
@@ -231,7 +237,7 @@
         x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
-        class="fixed inset-0 z-30 flex items-end bg-black bg-opacity-50 sm:items-center sm:justify-center">
+        class="spark-dialog-backdrop fixed inset-0 z-30 flex items-end bg-black bg-opacity-50 sm:items-center sm:justify-center">
         <div
             x-show="modal === 'edit'"
             x-transition:enter="transition ease-out duration-150"
@@ -262,7 +268,7 @@
             </div>
             @endif
 
-            <form :action="'{{ url('admin/students') }}/' + editData.id" method="POST">
+            <form :action="'{{ url($routePrefix . '/students') }}/' + editData.id" method="POST">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="_modal" value="edit">
@@ -271,29 +277,29 @@
                 <div class="grid grid-cols-1 gap-6 mb-6 sm:grid-cols-2">
                     <label class="block">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Student ID <span class="text-red-500">*</span></span>
-                        <input type="text" name="student_id" x-model="editData.student_id" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                        <input type="text" name="student_id" x-model="editData.student_id" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                     </label>
                     <label class="block">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Full Name <span class="text-red-500">*</span></span>
-                        <input type="text" name="name" x-model="editData.name" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                        <input type="text" name="name" x-model="editData.name" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                     </label>
                 </div>
 
                 <div class="grid grid-cols-1 gap-6 mb-6 sm:grid-cols-2">
                     <label class="block">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Email <span class="text-red-500">*</span></span>
-                        <input type="email" name="email" x-model="editData.email" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                        <input type="email" name="email" x-model="editData.email" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                     </label>
                     <label class="block">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-400">New Password (leave blank to keep)</span>
-                        <input type="password" name="password" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                        <input type="password" name="password" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                     </label>
                 </div>
 
                 <div class="grid grid-cols-1 gap-6 mb-6 sm:grid-cols-2">
                     <label class="block">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Course / Program <span class="text-red-500">*</span></span>
-                        <select name="course" x-model="editData.course" class="block w-full mt-2 text-sm form-select dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                        <select name="course" x-model="editData.course" class="form-select-custom spark-field block w-full mt-2 text-sm form-select dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                             <option value="">-- Select a program --</option>
                             @foreach($programs as $program)
                             <option value="{{ $program }}">{{ $program }}</option>
@@ -302,13 +308,14 @@
                     </label>
                     <label class="block">
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Year Graduated (if Alumni)</span>
-                        <input type="text" name="year_graduated" x-model="editData.year_graduated" class="block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                        <input type="text" name="year_graduated" x-model="editData.year_graduated" class="form-control-custom spark-field block w-full mt-2 text-sm form-input dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                     </label>
                 </div>
 
                 <label class="block mb-6">
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-400">Student Category <span class="text-red-500">*</span></span>
-                    <select name="student_type" x-model="editData.student_type" class="block w-full mt-2 text-sm form-select dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
+                    <input type="hidden" name="q" value="{{ $search }}">
+                <select aria-label="Filter by student category" name="student_type" x-model="editData.student_type" class="form-select-custom spark-field block w-full mt-2 text-sm form-select dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple">
                         @foreach($studentTypes as $type)
                         <option value="{{ $type['value'] }}">{{ $type['label'] }}</option>
                         @endforeach
@@ -321,7 +328,7 @@
                         Cancel
                     </button>
                     <button type="submit"
-                        class="w-full px-5 py-3 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg sm:w-auto sm:px-4 sm:py-2 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
+                        class="btn btn-primary w-full px-5 py-3 text-sm font-medium leading-5 text-white transition-colors duration-150 bg-purple-600 border border-transparent rounded-lg sm:w-auto sm:px-4 sm:py-2 hover:bg-purple-700 focus:outline-none focus:shadow-outline-purple">
                         Update Student
                     </button>
                 </footer>
@@ -339,7 +346,7 @@
         x-transition:leave="transition ease-in duration-150"
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
-        class="fixed inset-0 z-30 flex items-end bg-black bg-opacity-50 sm:items-center sm:justify-center">
+        class="spark-dialog-backdrop fixed inset-0 z-30 flex items-end bg-black bg-opacity-50 sm:items-center sm:justify-center">
         <div
             x-show="modal === 'delete'"
             x-transition:enter="transition ease-out duration-150"
@@ -372,7 +379,7 @@
                     This action cannot be undone.
                 </p>
             </div>
-            <form :action="'{{ url('admin/students') }}/' + deleteId" method="POST">
+            <form :action="'{{ url($routePrefix . '/students') }}/' + deleteId" method="POST">
                 @csrf
                 @method('DELETE')
                 <footer class="flex flex-col items-center justify-end px-6 py-3 -mx-6 -mb-4 space-y-4 sm:space-y-0 sm:space-x-6 sm:flex-row bg-gray-50 dark:bg-gray-800">

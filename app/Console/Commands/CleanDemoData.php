@@ -12,6 +12,11 @@ class CleanDemoData extends Command
 
     public function handle(): int
     {
+        if (! app()->environment(['local', 'testing'])) {
+            $this->error('Demo commands are restricted to local and testing environments.');
+            return self::FAILURE;
+        }
+
         if (!$this->confirm('This will DELETE all students and document requests. Continue?')) {
             $this->info('Cancelled.');
             return self::SUCCESS;

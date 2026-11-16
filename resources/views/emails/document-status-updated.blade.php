@@ -5,7 +5,7 @@
     <style>
         body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-        .header { background-color: #7e3af2; color: white; padding: 20px; border-radius: 8px 8px 0 0; }
+        .header { background-color: #293681; color: white; padding: 20px; border-radius: 18px 18px 0 0; }
         .content { background-color: #f9f9f9; padding: 20px; border-radius: 0 0 8px 8px; }
         .status-badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-weight: bold; }
         .info-table { width: 100%; border-collapse: collapse; margin: 15px 0; }

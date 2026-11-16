@@ -10,13 +10,22 @@ use Illuminate\Support\Str;
 
 class GenerateStudents extends Command
 {
-    protected $signature = 'db:generate-students {count=50 : Number of students to create} {--password=student123 : Default password for created accounts}';
+    protected $signature = 'db:generate-students {count=50 : Number of students to create} {--password= : Optional password for local demo accounts; omitted means unique random passwords}';
     protected $description = 'Generate demo student accounts for local testing.';
 
     public function handle(): int
     {
+        if (! app()->environment(['local', 'testing'])) {
+            $this->error('Demo commands are restricted to local and testing environments.');
+            return self::FAILURE;
+        }
+
         $count = max(1, min(5000, (int) $this->argument('count')));
-        $password = (string) $this->option('password');
+        $password = $this->option('password');
+        if ($password !== null && (strlen($password) < 8 || strlen($password) > 72)) {
+            $this->error('A demo password must contain between 8 and 72 characters.');
+            return self::FAILURE;
+        }
 
         $programs = SystemSetting::get('programs', config('programs.default', []));
         if (empty($programs)) {
@@ -51,7 +60,7 @@ class GenerateStudents extends Command
                 'student_id' => $studentId,
                 'name' => $name,
                 'email' => $email,
-                'password' => Hash::make($password),
+                'password' => Hash::make($password ?? Str::random(40)),
                 'course' => $course,
                 'year_graduated' => $yearGraduated,
                 'student_type' => $studentType,
@@ -62,7 +71,7 @@ class GenerateStudents extends Command
             $created++;
         }
 
-        $this->info("Created {$created} student(s). Default password: {$password}");
+        $this->info("Created {$created} student(s). Passwords are not printed; use student invitations for account access.");
         return self::SUCCESS;
     }
 }

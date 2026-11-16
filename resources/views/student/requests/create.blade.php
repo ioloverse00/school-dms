@@ -1,12 +1,13 @@
 @extends('layouts.dashboard')
 
 @section('content')
-<div class="w-full">
-    <h2 class="mt-6 mb-6 text-2xl font-semibold text-gray-700 dark:text-gray-200">
+<div class="new-request-page">
+    <h1 class="new-request-title">
         New Document Request
-    </h2>
+    </h1>
+    <p class="new-request-intro">Choose your document, tell us what you need it for, and attach your payment proof.</p>
 
-    <div class="bg-white rounded-lg shadow-xs dark:bg-gray-800 p-8 max-w-5xl mx-auto">
+    <div class="card new-request-card">
 
         @if($errors->any())
         <div class="p-4 mb-6 text-sm text-red-700 bg-red-100 rounded-lg">
@@ -20,11 +21,11 @@
 
         {{-- Student Info --}}
         @php
-            $categoryLabels = ['regular' => 'Regular Student', 'graduating' => 'Graduating Student', 'alumni' => 'Alumni'];
+            $categoryLabels = \App\Support\StudentCategory::labels();
         @endphp
-        <div class="mb-8 p-6 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+        <div class="new-request-student">
             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4 uppercase tracking-wide">Student Information</h3>
-            <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 1rem 3rem;">
+            <div class="new-request-student-grid">
                 <div>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Student ID</p>
                     <p class="text-sm font-medium text-gray-700 dark:text-gray-200">{{ $user->student_id ?? 'N/A' }}</p>
@@ -46,11 +47,11 @@
                 @if($user->student_type === 'alumni')
                 <div>
                     <label class="block text-xs text-gray-500 dark:text-gray-400 mb-1">Year Graduated</label>
-                    <input type="number" name="year_graduated"
+                    <input type="number" name="year_graduated" required form="document-request-form"
                         value="{{ old('year_graduated', $user->year_graduated) }}"
                         min="1990" max="{{ date('Y') }}"
                         placeholder="e.g. {{ date('Y') }}"
-                        class="w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg dark:bg-gray-600 dark:text-gray-200 dark:border-gray-500 focus:outline-none focus:border-purple-400">
+                        class="form-control-custom spark-field w-full px-3 py-1.5 text-sm border border-gray-300 rounded-lg dark:bg-gray-600 dark:text-gray-200 dark:border-gray-500 focus:outline-none focus:border-purple-400">
                     @error('year_graduated')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror
@@ -59,14 +60,15 @@
             </div>
         </div>
 
-        <form action="{{ route('student.requests.store') }}" method="POST" enctype="multipart/form-data" class="px-6 pb-6">
+        <form id="document-request-form" action="{{ route('student.requests.store') }}" method="POST" enctype="multipart/form-data" class="new-request-form">
             @csrf
+            <input type="hidden" name="submission_token" value="{{ old('submission_token', (string) \Illuminate\Support\Str::uuid()) }}">
 
-            <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem 3rem;" class="mb-6">
+            <div class="new-request-fields">
                 <label class="block">
                     <span class="text-sm text-gray-700 dark:text-gray-400">Document Category <span class="text-red-500">*</span></span>
-                    <select name="category" id="category"
-                        class="block w-full mt-1 text-sm form-select dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300"
+                    <select name="category" id="category" required
+                        class="form-select-custom spark-field block w-full mt-1 text-sm form-select dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300"
                         onchange="filterDocumentTypes(this.value)">
                         <option value="">-- Select Category --</option>
                         <option value="academic"       {{ old('category') === 'academic'       ? 'selected' : '' }}>Academic Documents</option>
@@ -76,8 +78,8 @@
 
                 <label class="block">
                     <span class="text-sm text-gray-700 dark:text-gray-400">Document Type <span class="text-red-500">*</span></span>
-                    <select name="document_type_id" id="document_type_id"
-                        class="block w-full mt-1 text-sm form-select dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300">
+                    <select name="document_type_id" id="document_type_id" required disabled
+                        class="form-select-custom spark-field block w-full mt-1 text-sm form-select dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300">
                         <option value="">-- Select Category First --</option>
                         @foreach($documentTypes as $cat => $types)
                             @foreach($types as $type)
@@ -97,59 +99,59 @@
                 </label>
 
                 <label class="block">
-                    <span class="text-sm text-gray-700 dark:text-gray-400">Purpose</span>
-                    <select name="purpose"
-                        class="block w-full mt-1 text-sm form-select dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300">
+                    <span class="text-sm text-gray-700 dark:text-gray-400">Purpose <span class="text-red-500">*</span></span>
+                    <select name="purpose" required
+                        class="form-select-custom spark-field block w-full mt-1 text-sm form-select dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300">
                         <option value="">-- Select Purpose --</option>
-                        <option value="Employment">Employment</option>
-                        <option value="Transfer to another school">Transfer to another school</option>
-                        <option value="Further studies">Further studies</option>
-                        <option value="Scholarship">Scholarship</option>
-                        <option value="Job application">Job application</option>
-                        <option value="Personal requirements">Personal requirements</option>
-                        <option value="Others">Others</option>
+                        <option value="Employment" @selected(old('purpose') === 'Employment')>Employment</option>
+                        <option value="Transfer to another school" @selected(old('purpose') === 'Transfer to another school')>Transfer to another school</option>
+                        <option value="Further studies" @selected(old('purpose') === 'Further studies')>Further studies</option>
+                        <option value="Scholarship" @selected(old('purpose') === 'Scholarship')>Scholarship</option>
+                        <option value="Job application" @selected(old('purpose') === 'Job application')>Job application</option>
+                        <option value="Personal requirements" @selected(old('purpose') === 'Personal requirements')>Personal requirements</option>
+                        <option value="Others" @selected(old('purpose') === 'Others')>Others</option>
                     </select>
                 </label>
 
                 <label class="block">
-                    <span class="text-sm text-gray-700 dark:text-gray-400">Urgency Level</span>
-                    <select name="urgency"
-                        class="block w-full mt-1 text-sm form-select dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300">
-                        <option value="regular">Regular</option>
-                        <option value="urgent">Urgent</option>
-                        <option value="very_urgent">Very Urgent</option>
+                    <span class="text-sm text-gray-700 dark:text-gray-400">Urgency Level <span class="text-red-500">*</span></span>
+                    <select name="urgency" required
+                        class="form-select-custom spark-field block w-full mt-1 text-sm form-select dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300">
+                        <option value="regular" @selected(old('urgency', 'regular') === 'regular')>Normal</option>
+                        <option value="urgent" @selected(old('urgency', 'regular') === 'urgent')>Urgent</option>
+                        <option value="very_urgent" @selected(old('urgency', 'regular') === 'very_urgent')>Very Urgent</option>
                     </select>
                 </label>
 
                 <label class="block">
-                    <span class="text-sm text-gray-700 dark:text-gray-400">Number of Copies</span>
-                    <input type="number" name="copies" value="1" min="1"
-                        class="block w-full mt-1 text-sm form-input dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300">
+                    <span class="text-sm text-gray-700 dark:text-gray-400">Number of Copies <span class="text-red-500">*</span></span>
+                    <input type="number" name="copies" required value="{{ old('copies', 1) }}" min="1" max="{{ config('document_requests.max_copies', 100) }}"
+                        class="form-control-custom spark-field block w-full mt-1 text-sm form-input dark:border-gray-600 dark:bg-gray-700 focus:border-purple-400 focus:outline-none focus:shadow-outline-purple dark:text-gray-300">
                 </label>
             </div>
 
-            <hr class="mb-6 border-gray-200 dark:border-gray-700">
+            <h2 class="new-request-section-title">Payment proof</h2><p class="new-request-hint">Upload a PDF, JPG or PNG, up to 10 MB. All fields marked * are required.</p>
 
             {{-- Section: Attachments --}}
-            <p class="mb-4 text-sm font-semibold text-gray-600 dark:text-gray-400">Attachments</p>
-            <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 1.5rem 3rem;" class="mb-6">
+            
+            <div class="new-request-fields">
                 <label class="block">
                     <span class="text-sm text-gray-700 dark:text-gray-400">Proof of Payment <span class="text-red-500">*</span></span>
-                    <input type="file" name="proof_of_payment" accept=".pdf,.jpg,.jpeg,.png"
-                        class="block w-full mt-1 text-sm form-input dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
+                    <input type="file" name="proof_of_payment" required accept=".pdf,.jpg,.jpeg,.png"
+                        class="form-control-custom spark-field block w-full mt-1 text-sm form-input dark:border-gray-600 dark:bg-gray-700 dark:text-gray-300">
                     @error('proof_of_payment')
                         <span class="text-red-500 text-xs mt-1">{{ $message }}</span>
                     @enderror
                 </label>
             </div>
 
-            <div class="flex flex-col mt-8 mb-4 space-y-4 sm:flex-row sm:justify-end sm:space-y-0 sm:space-x-6">
+            <div class="new-request-actions">
                 <a href="{{ route('student.dashboard') }}"
-                    class="px-5 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100 dark:text-gray-400 dark:border-gray-600 dark:hover:bg-gray-700">
+                    class="btn btn-outline-primary">
                     Cancel
                 </a>
                 <button type="submit"
-                    class="px-5 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700">
+                    class="btn btn-primary px-5 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700">
                     Submit Request
                 </button>
             </div>
@@ -167,25 +169,29 @@ function filterDocumentTypes(category) {
 
     placeholder.textContent = category ? '-- Select Document Type --' : '-- Select Category First --';
     select.value = '';
+    select.disabled = !category;
 
     options.forEach(function(opt) {
-        var categoryMatch = !category || opt.dataset.category === category;
+        var categoryMatch = !!category && opt.dataset.category === category;
         var alumniMatch = opt.dataset.alumniOnly !== '1' || isAlumni;
 
         if (categoryMatch && alumniMatch) {
             opt.style.display = '';
+            opt.disabled = false;
         } else {
             opt.style.display = 'none';
+            opt.disabled = true;
             if (opt.selected) opt.selected = false;
         }
     });
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-    const savedCategory = '{{ old('category') }}';
+    const savedCategory = @json(old('category', ''));
+    filterDocumentTypes(savedCategory);
     if (savedCategory) {
         filterDocumentTypes(savedCategory);
-        const oldDocType = '{{ old('document_type_id') }}';
+        const oldDocType = @json(old('document_type_id', ''));
         if (oldDocType) {
             document.getElementById('document_type_id').value = oldDocType;
         }

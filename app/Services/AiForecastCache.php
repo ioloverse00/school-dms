@@ -17,12 +17,16 @@ class AiForecastCache
 
     public function put(array $payload): void
     {
+        $payload['calendar_revision'] = app(AcademicCalendar::class)->get()['revision'];
         SystemSetting::set(self::KEY, $payload);
     }
 
     public function isFresh(?array $cached, int $ttlMinutes): bool
     {
         if (!$cached) {
+            return false;
+        }
+        if (($cached['calendar_revision'] ?? 0) !== app(AcademicCalendar::class)->get()['revision']) {
             return false;
         }
         $generatedAt = $cached['generated_at'] ?? null;
@@ -36,7 +40,7 @@ class AiForecastCache
             return false;
         }
 
-        return $ts->greaterThanOrEqualTo(Carbon::now()->subMinutes(max(1, $ttlMinutes)));
+        return $ts->lessThanOrEqualTo(Carbon::now()) && $ts->greaterThanOrEqualTo(Carbon::now()->subMinutes(max(1, $ttlMinutes)));
     }
 }
 

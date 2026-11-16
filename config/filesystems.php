@@ -30,6 +30,15 @@ return [
 
     'disks' => [
 
+        // Confidential request evidence must never have a public URL or temporary serving route.
+        'documents' => [
+            'driver' => 'local',
+            'root' => storage_path('app/private'),
+            'visibility' => 'private',
+            'serve' => false,
+            'throw' => true,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

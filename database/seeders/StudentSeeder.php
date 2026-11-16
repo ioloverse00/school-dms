@@ -10,6 +10,10 @@ class StudentSeeder extends Seeder
 {
     public function run(): void
     {
+        if (! app()->environment(['local', 'testing'])) {
+            throw new \RuntimeException('Demo seeders are restricted to local and testing environments.');
+        }
+
         $students = [
             // Regular students
             ['student_id' => '210113001', 'name' => 'Reyes, Maria Santos',         'email' => 'reyes.maria@school.edu',       'course' => 'BS Computer Science',       'type' => 'regular',    'year' => null],
@@ -73,7 +77,7 @@ class StudentSeeder extends Seeder
                 'student_id'     => $data['student_id'],
                 'name'           => $data['name'],
                 'email'          => $data['email'],
-                'password'       => Hash::make('student123'),
+                'password'       => Hash::make(\Illuminate\Support\Str::random(40)),
                 'course'         => $data['course'],
                 'student_type'   => $data['type'],
                 'year_graduated' => $data['year'],

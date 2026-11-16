@@ -30,6 +30,15 @@ class AuthenticatedSessionController extends Controller
 
         $request->authenticate();
 
+        if (! $request->user()->hasAnyRole(['admin', 'registrar', 'student'])) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'email' => 'Your account has not been provisioned for access. Contact your school.',
+            ]);
+        }
+
         $request->session()->regenerate();
 
         // Redirect based on role

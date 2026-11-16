@@ -31,6 +31,11 @@ class ForecastSummaryBuilder
         $productiveHoursPerStaffPerDay = $this->floatSetting('forecast_productive_hours_per_staff_per_day', (float) config('forecasting.productive_hours_per_staff_per_day', 6.0), 1.0, 24.0);
         $peakDayMultiplier = $this->floatSetting('forecast_peak_day_multiplier', (float) config('forecasting.peak_day_multiplier', 1.4), 1.0, 5.0);
         $businessDaysOnly = $this->boolSetting('forecast_business_days_only', (bool) config('forecasting.business_days_only', true));
+        $capacitySettings = app(StaffingCapacity::class)->defaults();
+        if ($capacitySettings) {
+            $avgMinutesPerRequest = (float) $capacitySettings['minutes'];
+            $productiveHoursPerStaffPerDay = (float) $capacitySettings['productive_hours'];
+        }
 
         $workload = $this->workloadAndStaffing(
             $peakMonths[0]['month'] ?? null,
@@ -64,7 +69,7 @@ class ForecastSummaryBuilder
             'staffing_needs' => array_merge($workload['staffing'], [
                 'monthly_surge_threshold_ratio' => 1.3,
                 'monthly_surge_recommendations' => $staffingRecommendations,
-            ]),
+            ], app(StaffingCapacity::class)->assess($peakMonths[0]['month'] ?? null, $peakMonths[0]['requests'] ?? 0)),
             'assumptions' => $workload['assumptions'],
         ];
     }
@@ -105,7 +110,7 @@ class ForecastSummaryBuilder
     private function historicalPeakPeriods(int $historyMonths): array
     {
         $historyMonths = max(1, min(60, $historyMonths));
-        $since = Carbon::now()->subMonths($historyMonths)->startOfMonth();
+        $since = Carbon::now()->startOfMonth()->subMonths($historyMonths - 1);
 
         $driver = DB::connection()->getDriverName();
         $weekdayExpr = $driver === 'sqlite'
@@ -142,7 +147,7 @@ class ForecastSummaryBuilder
         foreach ($weekdayRaw as $row) {
             $wk = (int) ($row->wk ?? 0);
             if ($driver !== 'sqlite') {
-                $wk = ($wk + 5) % 7; // convert MySQL 1..7 (Sun..Sat) to 0..6
+                $wk = self::mysqlWeekdayIndex($wk);
             }
             $count = (int) ($row->total ?? 0);
             $wkSum += $count;
@@ -186,11 +191,16 @@ class ForecastSummaryBuilder
         ];
     }
 
+    public static function mysqlWeekdayIndex(int $weekday): int
+    {
+        return ($weekday - 1) % 7; // MySQL 1=Sunday; the display map uses 0=Sunday.
+    }
+
     private function workloadAndStaffing(
         ?string $peakMonth,
         ?int $peakMonthRequests,
         int $totalFutureRequests,
-        int $avgMinutesPerRequest,
+        float $avgMinutesPerRequest,
         float $productiveHoursPerStaffPerDay,
         float $peakDayMultiplier,
         bool $businessDaysOnly
@@ -204,7 +214,7 @@ class ForecastSummaryBuilder
 
         if (is_string($peakMonth) && $peakMonth !== '' && is_int($peakMonthRequests) && $peakMonthRequests >= 0) {
             try {
-                $monthStart = Carbon::createFromFormat('Y-m', $peakMonth)->startOfMonth();
+                $monthStart = Carbon::createFromFormat('!Y-m', $peakMonth)->startOfMonth();
                 $daysInMonth = $businessDaysOnly
                     ? $this->countBusinessDaysInMonth($monthStart)
                     : (int) $monthStart->daysInMonth;
@@ -229,9 +239,15 @@ class ForecastSummaryBuilder
                 'avg_minutes_per_request' => $avgMinutesPerRequest,
                 'total_minutes' => (int) $totalMinutes,
                 'total_hours' => round($totalHours, 1),
+                'peak_month' => $peakMonth !== null ? [
+                    'month' => $peakMonth,
+                    'requests' => $peakMonthRequests,
+                    'estimated_hours' => round(($peakMonthRequests * $avgMinutesPerRequest) / 60, 1),
+                ] : null,
                 'peak_day' => $peakDay,
             ],
             'staffing' => [
+                'assessment_status' => 'capacity_inputs_needed',
                 'productive_hours_per_staff_per_day' => round($productiveHoursPerStaffPerDay, 2),
                 'estimated_staff_needed_on_peak_day' => $staffNeeded,
             ],
@@ -246,7 +262,7 @@ class ForecastSummaryBuilder
         array $months,
         array $overall,
         float $avgMonthlyForecast,
-        int $avgMinutesPerRequest,
+        float $avgMinutesPerRequest,
         float $productiveHoursPerStaffPerDay,
         float $peakDayMultiplier,
         bool $businessDaysOnly
@@ -311,7 +327,7 @@ class ForecastSummaryBuilder
     private function estimatePeakDayStaffForMonth(
         ?string $month,
         int $monthRequests,
-        int $avgMinutesPerRequest,
+        float $avgMinutesPerRequest,
         float $peakDayMultiplier,
         bool $businessDaysOnly,
         int $productivityMinutes
@@ -323,7 +339,7 @@ class ForecastSummaryBuilder
         try {
             $monthStart = null;
             if (is_string($month) && $month !== '') {
-                $monthStart = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+                $monthStart = Carbon::createFromFormat('!Y-m', $month)->startOfMonth();
             }
 
             $daysInMonth = $monthStart

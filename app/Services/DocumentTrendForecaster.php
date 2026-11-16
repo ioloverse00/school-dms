@@ -21,6 +21,11 @@ class DocumentTrendForecaster
 
     public function forecast(int $historyMonths = 24, int $forecastMonths = 12, array $context = []): array
     {
+        return $this->forecastWithHistory($historyMonths, $forecastMonths, $context)['forecast'];
+    }
+
+    public function forecastWithHistory(int $historyMonths = 24, int $forecastMonths = 12, array $context = []): array
+    {
         $historyMonths = max(6, min(60, $historyMonths));
         $forecastMonths = max(1, min(36, $forecastMonths));
 
@@ -34,19 +39,54 @@ class DocumentTrendForecaster
         $context['history_total_requests'] = $historyTotal;
         $context['history_nonzero_months'] = $nonZeroMonths;
         $context['insufficient_history'] = $insufficientHistory;
+        $calendar = app(AcademicCalendar::class)->get();
+        $calendarFrom = now()->startOfMonth()->subMonths($historyMonths - 1)->toDateString();
+        $calendarTo = now()->startOfMonth()->addMonths($forecastMonths)->endOfMonth()->toDateString();
+        $context['academic_calendar'] = ['revision' => $calendar['revision']];
+        foreach (['years', 'terms', 'events'] as $bucket) {
+            $context['academic_calendar'][$bucket] = collect($calendar[$bucket])
+                ->filter(fn ($item) => $item['starts_on'] <= $calendarTo && $item['ends_on'] >= $calendarFrom)
+                ->values()->all();
+        }
 
         $prompt = $this->buildPrompt($series, $perTypeSeries, $forecastMonths, $context);
 
-        return $this->gemini->generateJson($prompt, [
+        $output = $this->gemini->generateJson($prompt, [
             'temperature' => 0.1,
+            'response_schema' => ForecastResponseSchema::make($forecastMonths, count($perTypeSeries)),
         ]);
+        // Aggregate totals are arithmetic, not a second independent AI prediction.
+        $rows = $output['per_document_type'] ?? null;
+        $totals = array_fill(0, $forecastMonths, 0);
+        $canAggregate = is_array($rows) && array_is_list($rows) && count($rows) === count($perTypeSeries);
+        $overall = $output['overall_forecast'] ?? null;
+        if (!is_array($overall) || !array_is_list($overall) || count($overall) !== $forecastMonths) $canAggregate = false;
+        foreach (is_array($overall) ? $overall : [] as $value) {
+            if (!is_int($value) || $value < 0 || $value > 1000000) $canAggregate = false;
+        }
+        foreach (is_array($rows) ? $rows : [] as $row) {
+            $values = is_array($row) ? ($row['forecast'] ?? null) : null;
+            if (!is_array($values) || !array_is_list($values) || count($values) !== $forecastMonths) { $canAggregate = false; break; }
+            foreach ($values as $i => $value) {
+                if (!is_int($value) || $value < 0 || $value > 1000000) { $canAggregate = false; break 2; }
+                $totals[$i] += $value;
+            }
+        }
+        if ($canAggregate && is_array($output['volume_forecast'] ?? null)) {
+            $output['overall_forecast'] = $totals;
+            $output['volume_forecast']['total_requests'] = array_sum($totals);
+        }
+        return [
+            'forecast' => app(ForecastOutputValidator::class)->validate($output, $perTypeSeries, $forecastMonths, ForecastOutputValidator::months($forecastMonths)),
+            'history' => ['history_months' => $historyMonths, 'overall' => $series, 'per_document_type' => $perTypeSeries],
+        ];
     }
 
     private function buildMonthlySeries(int $historyMonths): array
     {
         $months = collect();
         for ($i = $historyMonths - 1; $i >= 0; $i--) {
-            $months->push(Carbon::now()->subMonths($i)->startOfMonth());
+            $months->push(Carbon::now()->startOfMonth()->subMonths($i));
         }
 
         $driver = DB::connection()->getDriverName();
@@ -62,7 +102,7 @@ class DocumentTrendForecaster
                 DB::raw($monthExpr . ' as month'),
                 DB::raw('count(*) as total')
             )
-            ->where('created_at', '>=', Carbon::now()->subMonths($historyMonths)->startOfMonth())
+            ->where('created_at', '>=', Carbon::now()->startOfMonth()->subMonths($historyMonths - 1))
             ->groupBy('year', 'month')
             ->get()
             ->keyBy(fn($r) => $r->year . '-' . $r->month);
@@ -80,7 +120,7 @@ class DocumentTrendForecaster
     {
         $months = collect();
         for ($i = $historyMonths - 1; $i >= 0; $i--) {
-            $months->push(Carbon::now()->subMonths($i)->startOfMonth());
+            $months->push(Carbon::now()->startOfMonth()->subMonths($i));
         }
 
         $labels = $months->map(fn($m) => $m->format('Y-m'))->values()->toArray();
@@ -99,7 +139,7 @@ class DocumentTrendForecaster
                 DB::raw($monthExpr . ' as month'),
                 DB::raw('count(*) as total')
             )
-            ->where('created_at', '>=', Carbon::now()->subMonths($historyMonths)->startOfMonth())
+            ->where('created_at', '>=', Carbon::now()->startOfMonth()->subMonths($historyMonths - 1))
             ->groupBy('document_type_id', 'year', 'month')
             ->get();
 
@@ -185,7 +225,7 @@ class DocumentTrendForecaster
         $lines = [
             'You are a school registrar analytics assistant. Your job is to analyze document request data from a school registrar\'s office and produce a clear operational forecast.',
             '',
-            'The school year runs from June 15 to the first week of April the following year. Use this calendar to interpret seasonal patterns.',
+            'Use the saved academic_calendar in the context for actual academic years, semesters, enrollment, exams, graduation and office closures. Archived calendar entries remain historical context. If dates are missing, disclose that limitation rather than invent school dates. Consider post-graduation demand for alumni records.',
             '',
             'Task: Forecast the next ' . $forecastMonths . ' months of demand and provide operational notes (peaks, workload, staffing).',
             'Return ONLY valid JSON (no markdown, no extra text, no code fences).',
@@ -210,7 +250,9 @@ class DocumentTrendForecaster
             json_encode($schemaHint, JSON_UNESCAPED_SLASHES),
             '',
             'Rules:',
-            '- All forecasts must be non-negative integers.',
+            '- All forecasts must be non-negative integers, at most 1000000 per month.',
+            '- Overall monthly totals MUST equal the sum of per-document-type forecasts; volume total MUST equal their sum.',
+            'Exact required future months: ' . json_encode(ForecastOutputValidator::months($forecastMonths)),
             '- months must be a list of the next ' . $forecastMonths . ' months in YYYY-MM format.',
             '- If context indicates a graduating batch, increase demand for graduation-related documents.',
             '- per_document_type MUST include one entry for every document_type_id provided in the per-document-type history.',

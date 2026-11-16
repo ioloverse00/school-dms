@@ -6,7 +6,7 @@
         Add New Registrar
     </h2>
 
-    <div class="bg-white rounded-lg shadow-xs dark:bg-gray-800 p-6 max-w-lg">
+    <div class="card spark-form-card bg-white rounded-lg shadow-xs dark:bg-gray-800 p-6 max-w-lg">
 
         @if($errors->any())
         <div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
@@ -27,7 +27,7 @@
                 </label>
                 <input type="text" name="name" value="{{ old('name') }}"
                     placeholder="e.g. Maria Santos"
-                    class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-300 text-sm">
+                    class="form-control-custom spark-field w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-300 text-sm">
             </div>
 
             <div class="mb-4">
@@ -36,7 +36,7 @@
                 </label>
                 <input type="email" name="email" value="{{ old('email') }}"
                     placeholder="e.g. registrar@school.edu"
-                    class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-300 text-sm">
+                    class="form-control-custom spark-field w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-300 text-sm">
             </div>
 
             <div class="mb-6">
@@ -45,7 +45,7 @@
                 </label>
                 <input type="password" name="password"
                     placeholder="Minimum 8 characters"
-                    class="w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-300 text-sm">
+                    class="form-control-custom spark-field w-full px-3 py-2 border rounded-lg dark:bg-gray-700 dark:text-gray-300 text-sm">
             </div>
 
             <div class="flex justify-end gap-4">
@@ -54,7 +54,7 @@
                     Cancel
                 </a>
                 <button type="submit"
-                    class="px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700">
+                    class="btn btn-primary px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700">
                     Create Registrar
                 </button>
             </div>

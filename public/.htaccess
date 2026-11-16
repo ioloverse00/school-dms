@@ -5,6 +5,9 @@
 
     RewriteEngine On
 
+    # Legacy payment proofs must not bypass the authorized application download route.
+    RewriteRule ^storage/request_files(?:/|$) - [F,L,NC]
+
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
     RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]

@@ -17,12 +17,6 @@ class SettingsController extends Controller
         $this->defaultPrograms = config('programs.default', []);
     }
 
-    private array $defaultStudentTypes = [
-        ['value' => 'regular',    'label' => 'Regular Student'],
-        ['value' => 'graduating', 'label' => 'Graduating Student'],
-        ['value' => 'alumni',     'label' => 'Alumni'],
-    ];
-
     private array $defaultStudentWeights = [
         'regular'   => 2,
         'graduating' => 5,
@@ -38,7 +32,7 @@ class SettingsController extends Controller
     public function index()
     {
         $programs       = SystemSetting::get('programs', $this->defaultPrograms);
-        $studentTypes   = SystemSetting::get('student_types', $this->defaultStudentTypes);
+        $studentTypes   = \App\Support\StudentCategory::options();
         $documentTypes  = DocumentType::orderBy('category')->orderBy('name')->get();
         $studentWeights = SystemSetting::get('student_category_weights', $this->defaultStudentWeights);
         $urgencyLevels  = SystemSetting::get('urgency_level_values', $this->defaultUrgencyLevels);
@@ -69,8 +63,10 @@ class SettingsController extends Controller
             }
         }
 
-        // Flatten in grouped order for paginated table
-        $sorted = array_merge(...array_values($groupedPrograms));
+        // Sort the complete list, independently of degree classification.
+        $sorted = $programs;
+        natcasesort($sorted);
+        $sorted = array_values($sorted);
         $categoryMap = [];
         foreach ($groupedPrograms as $key => $group) {
             foreach ($group as $p) $categoryMap[$p] = $key;
@@ -89,27 +85,35 @@ class SettingsController extends Controller
 
     public function studentTypes()
     {
-        $studentTypes = SystemSetting::get('student_types', $this->defaultStudentTypes);
-        return view('admin.settings.student-types', compact('studentTypes'));
+        return $this->studentWeightsPage();
     }
 
     public function documentWeightsPage()
     {
-        $documentTypes = DocumentType::orderBy('category')->orderBy('name')->get();
+        $documentTypes = DocumentType::withCount('documentRequests')
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get();
+
         return view('admin.settings.document-management.document-weights', compact('documentTypes'));
     }
 
     public function studentWeightsPage()
     {
         $studentWeights = SystemSetting::get('student_category_weights', $this->defaultStudentWeights);
-        return view('admin.settings.document-management.student-weights', compact('studentWeights'));
+        $urgencyLevels = SystemSetting::get('urgency_level_values', $this->defaultUrgencyLevels);
+        $urgencyWeight = SystemSetting::get('urgency_weight', 5);
+        $studentTypes = \App\Support\StudentCategory::options();
+        $unsupportedTypes = \App\Support\StudentCategory::unsupported();
+        $documentTypes = DocumentType::orderBy('name')->get();
+        $studentWeights = array_replace(array_fill_keys(array_keys(\App\Support\StudentCategory::labels()), 1), $studentWeights);
+        $studentWeights = array_intersect_key($studentWeights, \App\Support\StudentCategory::labels());
+        return view('admin.settings.document-management.priority-settings', compact('studentWeights', 'urgencyLevels', 'urgencyWeight', 'studentTypes', 'unsupportedTypes', 'documentTypes'));
     }
 
     public function urgencyLevelsPage()
     {
-        $urgencyLevels = SystemSetting::get('urgency_level_values', $this->defaultUrgencyLevels);
-        $urgencyWeight = SystemSetting::get('urgency_weight', 5);
-        return view('admin.settings.document-management.urgency-levels', compact('urgencyLevels', 'urgencyWeight'));
+        return redirect()->route('admin.settings.document-management.student-weights');
     }
 
     // --- Programs ---
@@ -134,6 +138,10 @@ class SettingsController extends Controller
     {
         $request->validate(['program' => 'required|string']);
 
+        if (\App\Models\User::where('course', $request->program)->exists()) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['program' => 'This program is assigned to existing accounts and cannot be removed.']);
+        }
+
         $programs = SystemSetting::get('programs', $this->defaultPrograms);
         $programs = array_values(array_filter($programs, fn($p) => $p !== $request->program));
         SystemSetting::set('programs', $programs);
@@ -145,47 +153,172 @@ class SettingsController extends Controller
 
     public function addStudentType(Request $request)
     {
-        $request->validate([
-            'type_value' => 'required|string|max:50|alpha_dash',
-            'type_label' => 'required|string|max:100',
+        if ($request->input('mode') === 'create') {
+            $data = $request->validate([
+                'type_value' => ['required', 'string', 'max:50', 'regex:/^[a-z][a-z0-9_]*$/'],
+                'type_label' => ['required', 'string', 'max:100'],
+                'weight' => ['required', 'integer', 'between:1,20'],
+            ]);
+            \Illuminate\Support\Facades\DB::transaction(function () use ($data) {
+                $types = \App\Support\StudentCategory::configured();
+                if (array_key_exists($data['type_value'], \App\Support\StudentCategory::labels()) || collect($types)->contains('value', $data['type_value'])) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['type_value' => 'That category code already exists.']);
+                }
+                if (trim($data['type_label']) === '' || collect(\App\Support\StudentCategory::labels())->contains(fn($label) => mb_strtolower(trim($label)) === mb_strtolower(trim($data['type_label'])))) {
+                    throw \Illuminate\Validation\ValidationException::withMessages(['type_label' => 'Choose a unique, non-empty category label.']);
+                }
+                $types[] = ['value' => $data['type_value'], 'label' => trim($data['type_label']), 'custom' => true];
+                $weights = SystemSetting::get('student_category_weights', $this->defaultStudentWeights);
+                $weights[$data['type_value']] = (int) $data['weight'];
+                SystemSetting::set('student_types', $types);
+                SystemSetting::set('student_category_weights', $weights);
+            });
+            return back()->with('success', 'Student category added.');
+        }
+        $validated = $request->validate([
+            'type_value' => ['required', 'string', \Illuminate\Validation\Rule::in(array_keys(\App\Support\StudentCategory::labels()))],
+            'type_label' => ['required', 'string', 'max:100'],
         ]);
 
-        $types = SystemSetting::get('student_types', $this->defaultStudentTypes);
-        $value = strtolower(trim($request->type_value));
-
-        if (!collect($types)->firstWhere('value', $value)) {
-            $types[] = ['value' => $value, 'label' => trim($request->type_label)];
-            SystemSetting::set('student_types', $types);
+        $types = SystemSetting::get('student_types', \App\Support\StudentCategory::options());
+        if (! is_array($types)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['type_value' => 'Review the invalid stored category configuration before editing.']);
         }
+        foreach ($types as $type) {
+            if (! is_array($type) || ! is_string($type['value'] ?? null) || ! is_string($type['label'] ?? null)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['type_value' => 'Review the invalid stored category configuration before editing.']);
+            }
+        }
+        $found = false;
+        foreach ($types as &$type) {
+            if ($type['value'] === $validated['type_value']) {
+                $type['label'] = trim($validated['type_label']);
+                $found = true;
+            }
+        }
+        unset($type);
+        if (! $found) {
+            $types[] = ['value' => $validated['type_value'], 'label' => trim($validated['type_label'])];
+        }
+        SystemSetting::set('student_types', $types);
 
-        return back()->with('success', "Student type \"{$request->type_label}\" added.");
+        return back()->with('success', 'Student category label saved. Its code and priority rules are unchanged.');
     }
 
     public function deleteStudentType(Request $request)
     {
-        $request->validate(['type_value' => 'required|string']);
+        $validated = $request->validate(['type_value' => ['required', 'string', 'max:50']]);
+        $value = $validated['type_value'];
+        if (array_key_exists($value, \App\Support\StudentCategory::LABELS)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['type_value' => 'The three supported categories are required and cannot be removed. You can edit their display labels.']);
+        }
+        if (\App\Models\User::where('student_type', $value)->exists() || \App\Models\DocumentRequest::where('student_category', $value)->exists()) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['type_value' => 'This category is referenced by existing records and cannot be removed.']);
+        }
+        $types = SystemSetting::get('student_types', []);
+        if (! is_array($types) || array_filter($types, fn ($type) => ! is_array($type) || ! is_string($type['value'] ?? null)) !== []) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['type_value' => 'Review the invalid stored category configuration before editing.']);
+        }
+        SystemSetting::set('student_types', array_values(array_filter($types, fn ($type) => $type['value'] !== $value)));
 
-        $types = SystemSetting::get('student_types', $this->defaultStudentTypes);
-        $types = array_values(array_filter($types, fn($t) => $t['value'] !== $request->type_value));
-        SystemSetting::set('student_types', $types);
-
-        return back()->with('success', 'Student type removed.');
+        return back()->with('success', 'Unused unsupported category removed.');
     }
 
     // --- Document Management ---
 
     public function updateDocumentWeights(Request $request)
     {
-        $weights = $request->input('weights', []);
-        foreach ($weights as $id => $weight) {
-            DocumentType::where('id', $id)->update(['weight' => max(1, (int) $weight)]);
+        $validated = $request->validate([
+            'weights' => ['required', 'array', 'min:1'],
+            'weights.*' => ['required', 'integer', 'between:1,20'],
+        ]);
+        $weights = $validated['weights'];
+        $ids = array_keys($weights);
+        foreach ($ids as $id) {
+            if (! ctype_digit((string) $id)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['weights' => 'Unknown document type.']);
+            }
         }
+        if (DocumentType::whereIn('id', $ids)->count() !== count($ids)) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['weights' => 'Unknown document type.']);
+        }
+        \Illuminate\Support\Facades\DB::transaction(function () use ($weights) {
+            foreach ($weights as $id => $weight) {
+                DocumentType::where('id', $id)->update(['weight' => (int) $weight]);
+            }
+        });
         return back()->with('success', 'Document type weights updated.');
+    }
+
+    public function addDocumentType(Request $request)
+    {
+        $validated = $request->validate([
+            '_modal' => ['nullable', 'string'],
+            'name' => ['required', 'string', 'max:100', 'unique:document_types,name'],
+            'category' => ['required', 'string', 'in:academic,certification'],
+            'weight' => ['required', 'integer', 'min:1', 'max:20'],
+            'alumni_only' => ['nullable', 'boolean'],
+        ]);
+
+        DocumentType::create([
+            'name' => trim($validated['name']),
+            'category' => $validated['category'],
+            'weight' => (int) $validated['weight'],
+            'alumni_only' => $request->boolean('alumni_only'),
+        ]);
+
+        return back()->with('success', "Document type \"{$validated['name']}\" added.");
+    }
+
+    public function updateDocumentType(Request $request, DocumentType $documentType)
+    {
+        $validated = $request->validate([
+            '_modal' => ['nullable', 'string'],
+            'name' => ['required', 'string', 'max:100', 'unique:document_types,name,' . $documentType->id],
+            'category' => ['required', 'string', 'in:academic,certification'],
+            'weight' => ['required', 'integer', 'min:1', 'max:20'],
+            'alumni_only' => ['nullable', 'boolean'],
+        ]);
+
+        $documentType->update([
+            'name' => trim($validated['name']),
+            'category' => $validated['category'],
+            'weight' => (int) $validated['weight'],
+            'alumni_only' => $request->boolean('alumni_only'),
+        ]);
+
+        return back()->with('success', "Document type \"{$validated['name']}\" updated.");
+    }
+
+    public function deleteDocumentType(DocumentType $documentType)
+    {
+        if ($documentType->documentRequests()->exists()) {
+            return back()->withErrors([
+                'document_type' => 'This document type already has requests and cannot be deleted.',
+            ]);
+        }
+
+        $name = $documentType->name;
+        $documentType->delete();
+
+        return back()->with('success', "Document type \"{$name}\" deleted.");
     }
 
     public function updateStudentWeights(Request $request)
     {
-        $weights = $request->input('weights', []);
+        $validated = $request->validate([
+            'weights' => ['required', 'array:'.implode(',', array_keys(\App\Support\StudentCategory::labels()))],
+            'weights.*' => ['required', 'integer', 'between:1,20'],
+            'weights.regular' => ['required', 'integer', 'between:1,20'],
+            'weights.graduating' => ['required', 'integer', 'between:1,20'],
+            'weights.alumni' => ['required', 'integer', 'between:1,20'],
+        ]);
+        $weights = $validated['weights'];
+        foreach (array_keys(\App\Support\StudentCategory::labels()) as $category) {
+            if (!array_key_exists($category, $weights)) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['weights' => 'Provide a weight for every student category.']);
+            }
+        }
         $weights = array_map('intval', $weights);
         SystemSetting::set('student_category_weights', $weights);
         return back()->with('success', 'Student category weights updated.');
@@ -193,7 +326,13 @@ class SettingsController extends Controller
 
     public function updateUrgencyLevels(Request $request)
     {
-        $levels = $request->input('levels', []);
+        $validated = $request->validate([
+            'levels' => ['required', 'array:regular,urgent,very_urgent'],
+            'levels.regular' => ['required', 'integer', 'between:1,10'],
+            'levels.urgent' => ['required', 'integer', 'between:1,10'],
+            'levels.very_urgent' => ['required', 'integer', 'between:1,10'],
+        ]);
+        $levels = $validated['levels'];
         $levels = array_map('intval', $levels);
         SystemSetting::set('urgency_level_values', $levels);
 

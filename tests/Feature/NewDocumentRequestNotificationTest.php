@@ -22,6 +22,7 @@ class NewDocumentRequestNotificationTest extends TestCase
     {
         Notification::fake();
         Storage::fake('public');
+        Storage::fake('documents');
 
         $admin = $this->userWithRole('admin');
         $registrar = $this->userWithRole('registrar');
@@ -36,6 +37,7 @@ class NewDocumentRequestNotificationTest extends TestCase
         ]);
 
         $response = $this->actingAs($student)->post(route('student.requests.store'), [
+            'submission_token' => (string) \Illuminate\Support\Str::uuid(),
             'document_type_id' => $documentType->id,
             'purpose' => 'Enrollment verification',
             'copies' => 1,
@@ -46,6 +48,9 @@ class NewDocumentRequestNotificationTest extends TestCase
         $response->assertRedirect(route('student.requests.index'));
 
         $documentRequest = DocumentRequest::firstOrFail();
+        $proof = $documentRequest->requiredFiles()->firstOrFail();
+        Storage::disk('documents')->assertExists($proof->file_path);
+        Storage::disk('public')->assertMissing($proof->file_path);
 
         Notification::assertSentTo($admin, NewDocumentRequestNotification::class, function (NewDocumentRequestNotification $notification, array $channels, object $notifiable) use ($documentRequest) {
             return $notification->toDatabase($notifiable)['url'] === route('admin.requests.show', $documentRequest->id);

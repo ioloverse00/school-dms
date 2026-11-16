@@ -33,7 +33,9 @@ class ForecastDocumentTrends extends Command
         try {
             $result = $forecaster->forecast($history, $months, $context);
         } catch (\Throwable $e) {
-            $this->error($e->getMessage());
+            $reference = (string) \Illuminate\Support\Str::uuid();
+            \Illuminate\Support\Facades\Log::warning('Forecast command failed.', ['reference' => $reference] + \App\Services\ForecastFailure::diagnostics($e));
+            $this->error('Forecast unavailable. Reference: '.$reference);
             return self::FAILURE;
         }
 

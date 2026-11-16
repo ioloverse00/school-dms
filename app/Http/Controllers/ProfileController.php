@@ -48,9 +48,9 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
-        Auth::logout();
+        app(\App\Services\DeleteUnusedAccount::class)->handle($user, 'userDeletion');
 
-        $user->delete();
+        Auth::logout();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();

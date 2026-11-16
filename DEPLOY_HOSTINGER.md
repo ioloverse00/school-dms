@@ -1,5 +1,13 @@
 # Deploying this Laravel app to Hostinger
 
+Before upgrading an existing installation, follow [private-file migration and release packaging](PRIVATE_FILES_DEPLOYMENT.md). Payment proofs must be migrated before resuming traffic. Use a new archive filename; existing ZIPs are not overwritten.
+
+Also apply [request reliability and status-email delivery setup](REQUEST_RELIABILITY_DEPLOYMENT.md): status emails require the scheduler/outbox command, independently of a queue worker.
+
+Use [secure account provisioning](ACCOUNT_PROVISIONING.md); seeders no longer create login accounts or default passwords. Student activation requires a school-provisioned record and emailed invitation.
+
+Run the read-only release checks in [the deployment gate and recovery runbook](REQUEST_RELIABILITY_DEPLOYMENT.md#release-gates-before-uat). Preserve the existing application key during upgrades; key generation is for first installation only.
+
 This repo is a **Laravel 12 (PHP 8.2+)** app using **Vite** (built assets live in `public/build`).
 
 ## 0) Choose your Hostinger type
@@ -84,7 +92,7 @@ Minimum checklist:
 
 - `APP_ENV=production`
 - `APP_DEBUG=false`
-- `APP_KEY=base64:...` (generate on-server with `php artisan key:generate --force`, or locally with `php artisan key:generate --show`)
+- `APP_KEY=base64:...` (preserve the existing key on upgrades; on first installation only, generate on-server with `php artisan key:generate --force`, or locally with `php artisan key:generate --show`)
 - `APP_URL=https://your-domain.com`
 - Database values: `DB_HOST`, `DB_DATABASE`, `DB_USERNAME`, `DB_PASSWORD`
 
@@ -97,7 +105,9 @@ If you use email, also set `MAIL_*`.
 From the app folder:
 
 ```bash
-php artisan key:generate --force
+# FIRST INSTALL ONLY: generate a key if no existing APP_KEY is configured.
+# php artisan key:generate --force
+# UPGRADES: preserve the existing APP_KEY; never regenerate it.
 php artisan migrate --force
 php artisan storage:link
 php artisan config:cache
@@ -107,7 +117,7 @@ php artisan view:cache
 
 If you do not have SSH on your plan:
 
-- Generate `APP_KEY` locally via `php artisan key:generate --show` and paste it into the server `.env`.
+- **First installation only:** generate `APP_KEY` locally via `php artisan key:generate --show` and paste it into the server `.env`.
 - You still need a way to run migrations (enable SSH, use a VPS, or run migrations from CI). Creating tables manually is possible but not recommended.
 
 ---

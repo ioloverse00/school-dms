@@ -22,6 +22,11 @@ class GenerateDocumentRequests extends Command
 
     public function handle(): int
     {
+        if (! app()->environment(['local', 'testing'])) {
+            $this->error('Demo commands are restricted to local and testing environments.');
+            return self::FAILURE;
+        }
+
         $months = max(1, min(60, (int) $this->argument('months')));
         $perMonth = max(1, min(2000, (int) $this->argument('per_month')));
         $seed = $this->option('seed');

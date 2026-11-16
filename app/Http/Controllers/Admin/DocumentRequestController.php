@@ -4,43 +4,31 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\DocumentRequest;
-use App\Mail\DocumentStatusUpdated;
 use App\Support\DocumentRequestCsvExporter;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
-use App\Notifications\DocumentStatusNotification;
 
 class DocumentRequestController extends Controller
 {
-    private const EXPORTABLE_STATUSES = [
-        'pending_verification',
-        'processing',
-        'ready_for_release',
-        'completed',
-        'rejected',
-    ];
-
     public function index(Request $request)
     {
         $showArchived = $request->boolean('archived');
         $status = $this->validatedStatus($request);
 
-        $requests = DocumentRequest::with(['user', 'documentType'])
-            ->when($showArchived, fn($q) => $q->whereNotNull('archived_at'))
-            ->when(!$showArchived, fn($q) => $q->whereNull('archived_at'))
-            ->when($status, fn($q) => $q->where('status', $status))
-            ->orderBy('priority_score', 'desc')
+        $search = \App\Support\ListSearch::term($request);
+        $documentTypeId = \App\Support\DocumentRequestListing::documentTypeFilter($request);
+        $documentTypes = \App\Models\DocumentType::orderBy('name')->get();
+        $requests = \App\Support\DocumentRequestListing::query($showArchived, $status, $search, $documentTypeId)
             ->paginate(10)
             ->withQueryString();
 
         $statusOptions = $this->statusOptions();
 
-        return view('admin.requests.index', compact('requests', 'showArchived', 'status', 'statusOptions'));
+        return view('admin.requests.index', compact('requests', 'showArchived', 'status', 'statusOptions', 'search', 'documentTypeId', 'documentTypes'));
     }
 
     public function export(Request $request)
     {
-        return DocumentRequestCsvExporter::download($request->boolean('archived'), $this->validatedStatus($request));
+        return DocumentRequestCsvExporter::download($request->boolean('archived'), $this->validatedStatus($request), \App\Support\ListSearch::term($request), \App\Support\DocumentRequestListing::documentTypeFilter($request));
     }
 
     public function show($id)
@@ -48,46 +36,39 @@ class DocumentRequestController extends Controller
         $documentRequest = DocumentRequest::with(['user', 'documentType', 'requiredFiles'])
             ->findOrFail($id);
 
-        return view('admin.requests.show', compact('documentRequest'));
+        $history = $documentRequest->events()->latest('id')->paginate(20, ['*'], 'history_page');
+        return view('admin.requests.show', compact('documentRequest', 'history'));
     }
 
     public function update(Request $request, $id)
     {
-        $documentRequest = DocumentRequest::with(['user', 'documentType'])
-            ->findOrFail($id);
+        $validated = $request->validate([
+            'status' => ['required', \Illuminate\Validation\Rule::in(array_keys(\App\Support\RequestStatus::LABELS))],
+            'remarks' => 'required|string|max:10000',
+            'edit_token' => ['required', 'string', 'size:64'],
+        ], ['edit_token.required' => \App\Support\RequestEditToken::MESSAGE, 'edit_token.size' => \App\Support\RequestEditToken::MESSAGE]);
 
-        $request->validate([
-            'status' => 'required|in:pending_requirements,pending_verification,processing,ready_for_release,completed,rejected',
-            'remarks' => 'nullable|string',
-        ]);
-
-        $documentRequest->update([
-            'status' => $request->status,
-            'remarks' => $request->remarks,
-        ]);
-
-        Mail::to($documentRequest->user->email)
-            ->send(new DocumentStatusUpdated($documentRequest));
-
-        $documentRequest->user->notify(new DocumentStatusNotification($documentRequest));
+        $changed = app(\App\Services\UpdateDocumentRequestStatus::class)->handle((int) $id, $validated, $request->user());
 
         return redirect()->route('admin.requests.show', $id)
-            ->with('success', 'Status updated and student notified!');
+            ->with('success', $changed
+                ? 'Status saved. In-app notification recorded; email queued for delivery.'
+                : 'No changes to save. The request is already up to date.');
     }
 
-    public function archive($id)
+    public function archive(Request $request, $id)
     {
-        $documentRequest = DocumentRequest::findOrFail($id);
-        $documentRequest->update(['archived_at' => now()]);
+        $validated = $request->validate(['edit_token' => ['required', 'string', 'size:64']], ['edit_token.required' => \App\Support\RequestEditToken::MESSAGE, 'edit_token.size' => \App\Support\RequestEditToken::MESSAGE]);
+        app(\App\Services\ArchiveDocumentRequest::class)->handle((int) $id, true, $request->user(), $validated['edit_token']);
 
         return redirect()->route('admin.requests.index')
             ->with('success', 'Request archived.');
     }
 
-    public function unarchive($id)
+    public function unarchive(Request $request, $id)
     {
-        $documentRequest = DocumentRequest::findOrFail($id);
-        $documentRequest->update(['archived_at' => null]);
+        $validated = $request->validate(['edit_token' => ['required', 'string', 'size:64']], ['edit_token.required' => \App\Support\RequestEditToken::MESSAGE, 'edit_token.size' => \App\Support\RequestEditToken::MESSAGE]);
+        app(\App\Services\ArchiveDocumentRequest::class)->handle((int) $id, false, $request->user(), $validated['edit_token']);
 
         return redirect()->route('admin.requests.show', $id)
             ->with('success', 'Request unarchived.');
@@ -95,19 +76,14 @@ class DocumentRequestController extends Controller
 
     private function validatedStatus(Request $request): ?string
     {
+        if ($request->boolean('archived')) return null;
         $status = $request->query('status');
 
-        return in_array($status, self::EXPORTABLE_STATUSES, true) ? $status : null;
+        return in_array($status, array_keys($this->statusOptions()), true) ? $status : null;
     }
 
     private function statusOptions(): array
     {
-        return [
-            'pending_verification' => 'Pending',
-            'processing' => 'Processing',
-            'ready_for_release' => 'Ready for Release',
-            'completed' => 'Completed',
-            'rejected' => 'Rejected',
-        ];
+        return ['pending_review' => 'Pending review'] + array_diff_key(\App\Support\RequestStatus::LABELS, ['completed' => true]);
     }
 }

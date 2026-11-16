@@ -3,7 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
-use RuntimeException;
+use Illuminate\Http\Client\ConnectionException;
 
 class GeminiClient
 {
@@ -14,87 +14,41 @@ class GeminiClient
 
     public function generateJson(string $prompt, array $options = []): array
     {
-        if (!$this->isEnabled()) {
-            throw new RuntimeException('Gemini is disabled. Set GEMINI_ENABLED=true.');
+        if (!$this->isEnabled() || !(string) config('gemini.api_key')) {
+            throw new ForecastFailure('provider_configuration');
         }
-
-        $apiKey = (string) config('gemini.api_key');
-        if ($apiKey === '') {
-            throw new RuntimeException('Missing GEMINI_API_KEY.');
-        }
-
-        $primaryModel = (string) ($options['model'] ?? config('gemini.model'));
-        $fallbackModels = (array) config('gemini.fallback_models', []);
-        $modelsToTry = array_values(array_filter(array_merge([$primaryModel], $fallbackModels)));
+        $model = (string) ($options['model'] ?? config('gemini.model'));
         $baseUrl = rtrim((string) config('gemini.base_url'), '/');
-        $timeout = (int) ($options['timeout_seconds'] ?? config('gemini.timeout_seconds', 30));
-        $retries = (int) ($options['retries'] ?? config('gemini.retries', 2));
-
-        $payload = [
-            'contents' => [
-                [
-                    'role' => 'user',
-                    'parts' => [
-                        ['text' => $prompt],
-                    ],
-                ],
-            ],
-            'generationConfig' => [
-                'temperature' => (float) ($options['temperature'] ?? 0.2),
-            ],
-        ];
-
-        $lastError = null;
-
-        foreach ($modelsToTry as $model) {
-            $url = $baseUrl . '/v1beta/models/' . $model . ':generateContent';
-            $attempts = max(1, $retries + 1);
-
-            for ($attempt = 1; $attempt <= $attempts; $attempt++) {
-                $response = Http::timeout($timeout)
-                    ->acceptJson()
-                    ->withHeaders(['Content-Type' => 'application/json'])
-                    ->post($url . '?key=' . urlencode($apiKey), $payload);
-
-                if ($response->successful()) {
-                    $data = $response->json();
-                    $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? null;
-                    if (!is_string($text) || trim($text) === '') {
-                        $lastError = 'Gemini returned an empty response.';
-                        continue;
-                    }
-
-                    $decoded = $this->parseJsonFromText($text);
-                    if (!is_array($decoded)) {
-                        $lastError = 'Gemini did not return valid JSON.';
-                        continue;
-                    }
-
-                    return $decoded;
-                }
-
-                $status = $response->status();
-                $lastError = 'Gemini API error (' . $status . ') using model ' . $model . ': ' . $response->body();
-
-                // Retry on transient errors
-                if (in_array($status, [429, 500, 503], true) && $attempt < $attempts) {
-                    usleep((int) (250000 * (2 ** ($attempt - 1))));
-                    continue;
-                }
-
-                // If model is overloaded/unavailable, try next model (if any)
-                if (in_array($status, [429, 503], true)) {
-                    break;
-                }
-
-                // Non-transient: stop immediately
-                throw new RuntimeException($lastError);
-            }
+        $timeout = max(1, min(25, (int) ($options['timeout_seconds'] ?? config('gemini.timeout_seconds', 25))));
+        $generation = ['temperature' => (float) ($options['temperature'] ?? 0.2), 'responseMimeType' => 'application/json'];
+        if (is_array($options['response_schema'] ?? null)) $generation['responseSchema'] = $options['response_schema'];
+        if ($model === 'gemini-2.5-flash') $generation['thinkingConfig'] = ['thinkingBudget' => 0];
+        // One bounded request. No automatic fallback/retry multiplication on shared hosting.
+        try {
+            $response = Http::connectTimeout(min(5, $timeout))->timeout($timeout)->acceptJson()
+                ->withHeaders(['Content-Type' => 'application/json', 'x-goog-api-key' => (string) config('gemini.api_key')])
+                ->post($baseUrl.'/v1beta/models/'.$model.':generateContent', [
+                    'contents' => [['role' => 'user', 'parts' => [['text' => $prompt]]]],
+                    'generationConfig' => $generation,
+                ]);
+        } catch (ConnectionException $exception) {
+            $previous = $exception->getPrevious();
+            $context = $previous && method_exists($previous, 'getHandlerContext') ? $previous->getHandlerContext() : [];
+            // Numeric transport code only: never log request URLs, headers or provider bodies.
+            \Illuminate\Support\Facades\Log::warning('Gemini transport failed.', ['curl_errno' => (int) ($context['errno'] ?? 0)]);
+            throw new ForecastFailure('provider_connection');
         }
-
-        throw new RuntimeException($lastError ?: 'Gemini API error.');
+        if (!$response->successful()) {
+            throw new ForecastFailure('provider_http', $response->status());
+        }
+        if (strlen($response->body()) > 2000000) {
+            throw new ForecastFailure('response_size');
+        }
+        $text = $response->json('candidates.0.content.parts.0.text');
+        $decoded = is_string($text) ? $this->parseJsonFromText($text) : null;
+        if (!is_array($decoded)) { throw new ForecastFailure('response_json'); }
+        return $decoded;
     }
-
     private function parseJsonFromText(string $text): ?array
     {
         $text = trim($text);
@@ -158,17 +112,17 @@ class GeminiClient
                     $escape = false;
                     continue;
                 }
-                if ($ch === '\\\\') {
+                if ($ch === '\\') {
                     $escape = true;
                     continue;
                 }
-                if ($ch === '\"') {
+                if ($ch === '"') {
                     $inString = false;
                 }
                 continue;
             }
 
-            if ($ch === '\"') {
+            if ($ch === '"') {
                 $inString = true;
                 continue;
             }

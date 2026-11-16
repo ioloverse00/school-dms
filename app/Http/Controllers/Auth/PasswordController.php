@@ -10,6 +10,13 @@ use Illuminate\Validation\Rules\Password;
 
 class PasswordController extends Controller
 {
+    public function check(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $data = $request->validate(['current_password' => ['required', 'string', 'max:255']]);
+        return response()->json(['valid' => Hash::check($data['current_password'], $request->user()->password)])
+            ->header('Cache-Control', 'no-store');
+    }
+
     /**
      * Update the user's password.
      */
@@ -17,7 +24,7 @@ class PasswordController extends Controller
     {
         $validated = $request->validateWithBag('updatePassword', [
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', Password::defaults(), 'confirmed'],
+            'password' => ['bail', 'required', 'string', 'max:255', Password::min(8)->mixedCase()->numbers()->symbols(), 'confirmed', new \App\Rules\PasswordHashInput()],
         ]);
 
         $request->user()->update([

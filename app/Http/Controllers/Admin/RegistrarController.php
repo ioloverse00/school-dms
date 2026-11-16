@@ -11,7 +11,9 @@ class RegistrarController extends Controller
 {
     public function index()
     {
-        $registrars = User::role('registrar')->paginate(10);
+        $registrars = User::whereHas('roles', fn ($query) => $query->where('name', 'registrar')->where('guard_name', 'web'))
+            ->whereDoesntHave('roles', fn ($query) => $query->whereIn('name', ['admin', 'student']))
+            ->paginate(10);
         return view('admin.registrars.index', compact('registrars'));
     }
 
@@ -24,8 +26,8 @@ class RegistrarController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users'],
-            'password' => ['required', 'string', 'min:8'],
+            'email' => ['required', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'string', 'min:8', 'max:255', new \App\Rules\PasswordHashInput()],
         ]);
 
         $registrar = User::create([
@@ -42,17 +44,18 @@ class RegistrarController extends Controller
 
     public function edit($id)
     {
-        $registrar = User::findOrFail($id);
+        $registrar = $this->findManagedRegistrar($id);
         return view('admin.registrars.edit', compact('registrar'));
     }
 
     public function update(Request $request, $id)
     {
-        $registrar = User::findOrFail($id);
+        $registrar = $this->findManagedRegistrar($id);
 
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'unique:users,email,' . $id],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $id],
+            'password' => ['nullable', 'string', 'min:8', 'max:255', new \App\Rules\PasswordHashInput()],
         ]);
 
         $registrar->update([
@@ -70,9 +73,15 @@ class RegistrarController extends Controller
 
     public function destroy($id)
     {
-        $registrar = User::findOrFail($id);
-        $registrar->delete();
+        $registrar = $this->findManagedRegistrar($id);
+        app(\App\Services\DeleteUnusedAccount::class)->handle($registrar);
         return redirect()->route('admin.registrars.index')
             ->with('success', 'Registrar deleted successfully!');
+    }
+    private function findManagedRegistrar($id): User
+    {
+        return User::whereHas('roles', fn ($query) => $query->where('name', 'registrar')->where('guard_name', 'web'))
+            ->whereDoesntHave('roles', fn ($query) => $query->whereIn('name', ['admin', 'student']))
+            ->findOrFail($id);
     }
 }

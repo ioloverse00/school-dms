@@ -1,5 +1,13 @@
 # Deploying this Laravel app to `server10.indevfinite-server.com`
 
+Before upgrading an existing installation, follow [private-file migration and release packaging](PRIVATE_FILES_DEPLOYMENT.md). Payment proofs must be migrated before resuming traffic. Use a new archive filename; existing ZIPs are not overwritten.
+
+Also apply [request reliability and status-email delivery setup](REQUEST_RELIABILITY_DEPLOYMENT.md): status emails require the scheduler/outbox command, independently of a queue worker.
+
+Use [secure account provisioning](ACCOUNT_PROVISIONING.md); seeders no longer create login accounts or default passwords. Student activation requires a school-provisioned record and emailed invitation.
+
+Run the read-only release checks in [the deployment gate and recovery runbook](REQUEST_RELIABILITY_DEPLOYMENT.md#release-gates-before-uat). Preserve the existing application key during upgrades; key generation is for first installation only.
+
 This repo is a **Laravel 12 (PHP 8.2+)** app using **Vite** (built assets live in `public/build`).
 
 Because “Indevfinite Server” can be either shared hosting (File Manager + optional SSH) or a VPS, this guide covers both common layouts:
@@ -77,7 +85,9 @@ Minimum checklist:
 From the app folder:
 
 ```bash
-php artisan key:generate --force
+# FIRST INSTALL ONLY: generate a key if no existing APP_KEY is configured.
+# php artisan key:generate --force
+# UPGRADES: preserve the existing APP_KEY; never regenerate it.
 php artisan migrate --force
 php artisan storage:link
 php artisan config:cache
@@ -87,7 +97,7 @@ php artisan view:cache
 
 If you do not have SSH:
 
-- Generate the key locally with `php artisan key:generate --show` and paste it into the server `.env`.
+- **First installation only:** generate the key locally with `php artisan key:generate --show` and paste it into the server `.env`.
 - For migrations, either enable SSH, use a VPS, or run migrations from a trusted CI job.
 
 ## 7) Permissions

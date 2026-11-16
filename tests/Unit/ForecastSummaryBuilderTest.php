@@ -16,6 +16,7 @@ class ForecastSummaryBuilderTest extends TestCase
 
     public function test_it_builds_summary_metrics_from_forecast_and_history(): void
     {
+        $this->travelTo(Carbon::parse('2026-05-15 12:00:00'));
         $user = User::factory()->create();
 
         $typeA = DocumentType::create(['name' => 'Transcript', 'category' => 'Academic', 'weight' => 1, 'alumni_only' => false]);

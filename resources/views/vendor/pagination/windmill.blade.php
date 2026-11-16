@@ -1,5 +1,5 @@
 @if ($paginator->hasPages())
-<div class="grid px-4 py-3 text-xs font-semibold tracking-wide text-gray-500 uppercase border-t dark:border-gray-700 bg-gray-50 sm:grid-cols-9 dark:text-gray-400 dark:bg-gray-800">
+<div class="portal-pagination grid px-4 py-3 text-xs font-semibold tracking-wide text-gray-500 uppercase border-t dark:border-gray-700 bg-gray-50 sm:grid-cols-9 dark:text-gray-400 dark:bg-gray-800">
     <span class="flex items-center col-span-3">
         Showing {{ $paginator->firstItem() }}&ndash;{{ $paginator->lastItem() }} of {{ $paginator->total() }}
     </span>
@@ -7,7 +7,7 @@
     {{-- Pagination --}}
     <span class="flex col-span-4 mt-2 sm:mt-auto sm:justify-end">
         <nav aria-label="Table navigation">
-            <ul class="inline-flex items-center">
+            <ul class="pagination pagination-sm mb-0 inline-flex items-center">
                 {{-- Previous --}}
                 <li>
                     @if ($paginator->onFirstPage())
@@ -35,7 +35,7 @@
                         @foreach ($element as $page => $url)
                             <li>
                                 @if ($page == $paginator->currentPage())
-                                    <button class="px-3 py-1 text-white transition-colors duration-150 bg-purple-600 border border-r-0 border-purple-600 rounded-md focus:outline-none focus:shadow-outline-purple">{{ $page }}</button>
+                                    <button class="btn btn-primary px-3 py-1 text-white transition-colors duration-150 bg-purple-600 border border-r-0 border-purple-600 rounded-md focus:outline-none focus:shadow-outline-purple">{{ $page }}</button>
                                 @else
                                     <a href="{{ $url }}" class="px-3 py-1 rounded-md focus:outline-none focus:shadow-outline-purple">{{ $page }}</a>
                                 @endif

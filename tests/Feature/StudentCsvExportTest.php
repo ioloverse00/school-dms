@@ -47,7 +47,7 @@ class StudentCsvExportTest extends TestCase
         $csv = $response->streamedContent();
 
         $this->assertStringContainsString('"Student ID",Name,Email,Course,"Year Graduated","Student Category","Request Count","Created At"', $csv);
-        $this->assertStringContainsString('210113570,"Doe, John Ambatugan",student@school.edu,"Bachelor of Science in Psychology (BSPsych)",,Regular,1', $csv);
+        $this->assertStringContainsString('210113570,"Doe, John Ambatugan",student@school.edu,"Bachelor of Science in Psychology (BSPsych)",,"Regular Student",1', $csv);
     }
 
     public function test_registrar_can_export_students_as_csv(): void

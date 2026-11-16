@@ -9,7 +9,9 @@ class SystemSettingSeeder extends Seeder
 {
     public function run(): void
     {
-        SystemSetting::set('programs', config('programs.default', []));
+        SystemSetting::firstOrCreate(['key' => 'programs'], [
+            'value' => json_encode(config('programs.default', [])),
+        ]);
     }
 }
 
