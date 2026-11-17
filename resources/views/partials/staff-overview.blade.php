@@ -12,7 +12,7 @@
         <a class="card card-stat portal-metric portal-metric-link" href="{{ route($staffPrefix . '.requests.index', $filter ? ['status' => $filter] : []) }}" title="View {{ strtolower($label) }}" aria-label="{{ $label }}: {{ number_format($value) }}. View matching requests"><div class="stat-label portal-metric-label">{{ $label }}</div><div class="stat-value portal-metric-value">{{ number_format($value) }}</div><div class="portal-metric-note">@if($color)<span class="portal-dot" style="background:{{ $color }}"></span>@endif{{ $note }}</div></a>
     @endforeach
 </div>
-@if(session('success'))<div class="portal-auth-status" role="status">{{ session('success') }}</div>@endif
+@if(session('success'))<div x-data="{ feedbackVisible: true }" x-show="feedbackVisible" x-init="setTimeout(() => feedbackVisible = false, 3000)" class="portal-auth-status" role="status">{{ session('success') }}</div>@endif
 <div class="portal-dashboard-grid">
     <section class="card portal-card" aria-labelledby="queue-heading">
         <div class="card-header portal-card-header"><div><h2 id="queue-heading">Priority queue</h2><p class="portal-card-subtitle">Highest priority first · Oldest first when scores match</p></div><span class="portal-status">Top {{ $recentRequests->count() }} requests</span></div>

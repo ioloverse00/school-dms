@@ -9,7 +9,7 @@
     <div class="card spark-form-card bg-white rounded-lg shadow-xs dark:bg-gray-800 p-6">
 
         @if($errors->any())
-        <div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg">
+        <div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg" role="alert" x-data="{ errorVisible: true }" x-show="errorVisible" style="position:relative;padding-right:48px"><button type="button" aria-label="Dismiss error message" @click="errorVisible = false" style="position:absolute;top:8px;right:8px;width:32px;height:32px;border:0;background:transparent;color:inherit;font-size:24px;line-height:1;cursor:pointer">&times;</button>
             <ul>
                 @foreach($errors->all() as $error)
                     <li>{{ $error }}</li>

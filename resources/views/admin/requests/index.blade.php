@@ -36,7 +36,7 @@
     </div>
 
     @if(session('success'))
-    <div class="p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg">
+    <div x-data="{ feedbackVisible: true }" x-show="feedbackVisible" x-init="setTimeout(() => feedbackVisible = false, 3000)" class="p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg">
         {{ session('success') }}
     </div>
     @endif

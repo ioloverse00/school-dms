@@ -1,8 +1,5 @@
 <x-guest-layout>
     @if(session('status'))<div class="portal-auth-status" role="status">{{ session('status') }}</div>@endif
-    @if($errors->any())
-        <div class="portal-auth-errors" role="alert"><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
-    @endif
     <form method="POST" action="{{ route('login') }}">
         @csrf
         <div style="margin-bottom:20px">
@@ -18,6 +15,11 @@
                 </button>
             </div>
         </div>
+        @if($errors->any())
+            <div class="portal-auth-errors" role="alert" style="padding:10px 12px;font-size:12px;margin-bottom:16px">
+                {{ $errors->first() }}
+            </div>
+        @endif
         <div style="display:flex;justify-content:flex-end;margin-bottom:24px">
             @if(Route::has('password.request'))<a href="{{ route('password.request') }}" class="portal-inline-link">Forgot password?</a>@endif
         </div>

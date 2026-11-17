@@ -90,7 +90,7 @@
   if (!['success', 'info'].includes(toast.dataset.tone)) return;
   let timer;
   const stop = () => clearTimeout(timer);
-  const start = () => { stop(); timer = setTimeout(() => toast.remove(), 8000); };
+  const start = () => { stop(); timer = setTimeout(() => toast.remove(), 3000); };
   toast.addEventListener('mouseenter', stop); toast.addEventListener('mouseleave', start);
   toast.addEventListener('focusin', stop); toast.addEventListener('focusout', start);
   start();

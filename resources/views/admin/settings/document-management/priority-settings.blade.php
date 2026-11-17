@@ -2,7 +2,7 @@
 @section('title', 'Priority settings')
 @section('content')
 <div class="portal-page-header"><div><h1 class="portal-heading">Priority settings</h1><p class="portal-subtitle">Manage student categories and all values used to prioritize document requests.</p></div></div>
-@if($errors->any())<div class="alert alert-danger" role="alert"><strong>Please check your entries.</strong><ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+@if($errors->any())<div class="alert alert-danger" role="alert" x-data="{ errorVisible: true }" x-show="errorVisible" style="position:relative;padding-right:48px"><button type="button" aria-label="Dismiss error message" @click="errorVisible = false" style="position:absolute;top:8px;right:8px;width:32px;height:32px;border:0;background:transparent;color:inherit;font-size:24px;line-height:1;cursor:pointer">&times;</button><strong>Please check your entries.</strong><ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 <div class="row g-4 align-items-start">
     <div class="col-lg-6"><section class="card portal-card"><div class="card-header portal-card-header"><div><h2>Category weights</h2><p class="portal-subtitle">Weight added to the priority score per student category.</p></div></div>
     <form action="{{ route('admin.settings.student-weights.update') }}" method="POST">@csrf

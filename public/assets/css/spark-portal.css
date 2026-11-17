@@ -128,9 +128,13 @@ body.portal-app :focus-visible, body.portal-auth :focus-visible { outline-color:
 }
 
 /* Shared Spark/Bootstrap action feedback across authenticated and guest pages. */
-.portal-toast-container { position: fixed; top: 1rem; right: 1rem; z-index: 1090; display: grid; gap: .75rem; width: min(360px, calc(100vw - 2rem)); pointer-events: none; }
+.portal-toast-container { position: fixed; bottom: 1rem; right: 1rem; z-index: 1090; display: grid; gap: .5rem; width: min(320px, calc(100vw - 2rem)); pointer-events: none; }
 .portal-feedback-toast { width: 100%; pointer-events: auto; border-left-width: 4px; box-shadow: 0 8px 24px rgb(0 0 0 / 15%); overflow-wrap: anywhere; }
 .portal-feedback-toast .btn-close { min-width: 24px; min-height: 24px; }
+.portal-feedback-toast { position:relative; border-radius:10px; }
+.portal-feedback-toast .toast-header { position:absolute; right:8px; top:8px; padding:0; background:transparent; border:0; }
+.portal-feedback-toast .toast-header strong { display:none; }
+.portal-feedback-toast .toast-body { padding:12px 42px 12px 14px; font-size:12px; line-height:1.5; }
 @media (prefers-reduced-motion: no-preference) { .portal-feedback-toast { animation: portal-toast-enter .18s ease-out; } @keyframes portal-toast-enter { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } } }
 
 .portal-confirm-dialog { width: min(480px, calc(100vw - 2rem)); max-height: calc(100dvh - 2rem); margin: auto; padding: 0; border: 0; border-radius: 22px; color: var(--portal-ink); background: var(--portal-surface); box-shadow: 0 24px 70px #29368130; }
@@ -348,7 +352,7 @@ body.portal-app :focus-visible, body.portal-auth :focus-visible { outline-color:
 @media(max-width:575px) { .new-request-card { padding:20px; } .new-request-fields { grid-template-columns:minmax(0,1fr); gap:18px; } .new-request-title { font-size:24px; } .new-request-student { padding:16px; } .new-request-actions .btn { flex:1; } }
 
 /* Profile forms use explicit spacing rather than legacy utility classes. */
-.portal-profile-page { max-width:1120px; margin:0 auto; }
+.portal-profile-page { width:100%; max-width:none; margin:0; }
 .profile-intro { color:var(--portal-muted); font-size:13px; margin:0 0 24px; }
 .portal-profile-page .spark-profile-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:24px; align-items:stretch; }
 .portal-profile-page .spark-form-card { padding:28px; min-width:0; margin:0; }

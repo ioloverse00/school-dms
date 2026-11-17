@@ -1,12 +1,12 @@
 @extends('layouts.dashboard')
 
 @section('content')
-@if($errors->any())<div class="portal-auth-errors" role="alert">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
+@if($errors->any())<div class="portal-auth-errors" role="alert" x-data="{ errorVisible: true }" x-show="errorVisible" style="position:relative;padding-right:48px"><button type="button" aria-label="Dismiss error message" @click="errorVisible = false" style="position:absolute;top:8px;right:8px;width:32px;height:32px;border:0;background:transparent;color:inherit;font-size:24px;line-height:1;cursor:pointer">&times;</button>@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
 <div class="w-full">
     <h2 class="my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200">Programs / Courses</h2>
 
     @if(session('success'))
-    <div class="p-4 mb-6 text-sm text-green-700 bg-green-100 rounded-lg">{{ session('success') }}</div>
+    <div x-data="{ feedbackVisible: true }" x-show="feedbackVisible" x-init="setTimeout(() => feedbackVisible = false, 3000)" class="p-4 mb-6 text-sm text-green-700 bg-green-100 rounded-lg">{{ session('success') }}</div>
     @endif
 
     <div class="card spark-form-card w-full overflow-hidden rounded-lg shadow-xs">

@@ -19,4 +19,4 @@ request()->routeIs('password.confirm') => 'Confirm your password', request()->ro
 <p class="portal-auth-help">Need access? Contact your school for an account invitation.</p>
 @if(!request()->routeIs('login', 'password.request'))<a class="portal-inline-link" href="{{ route('login') }}">Back to sign in &rarr;</a>@endif
 @include('partials.spark-credit')
-</div></main></div>@include('partials.feedback-toasts')<script src="{{ asset('assets/js/spark-portal.js') }}" defer></script></body></html>
+</div></main></div>@unless(request()->routeIs('login'))@include('partials.feedback-toasts')@endunless<script src="{{ asset('assets/js/spark-portal.js') }}" defer></script></body></html>

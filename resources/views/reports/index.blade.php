@@ -2,7 +2,7 @@
 @section('title', 'Reports & analytics')
 @section('content')
 <div class="portal-page-header"><div><h1 class="portal-heading">Reports &amp; analytics</h1><p class="portal-subtitle">Request demand and recorded outcomes across academic periods.</p></div></div>
-@if($errors->any())<div class="alert alert-danger" role="alert"><ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
+@if($errors->any())<div class="alert alert-danger" role="alert" x-data="{ errorVisible: true }" x-show="errorVisible" style="position:relative;padding-right:48px"><button type="button" aria-label="Dismiss error message" @click="errorVisible = false" style="position:absolute;top:8px;right:8px;width:32px;height:32px;border:0;background:transparent;color:inherit;font-size:24px;line-height:1;cursor:pointer">&times;</button><ul class="mb-0">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 <section class="card portal-card mb-4">
 <form method="GET" action="{{ url()->current() }}" class="row g-3">
 <div class="col-md-6 col-xl-3"><label for="report-year">Academic year</label><select id="report-year" name="year" class="spark-field form-select-custom w-full"><option value="">All years</option>@foreach(collect($saved['years'])->sortByDesc('starts_on') as $id => $item)<option value="{{ $id }}" @selected(request('year') === $id)>{{ $item['name'] }}</option>@endforeach</select></div>

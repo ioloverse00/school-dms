@@ -12,7 +12,7 @@
         <div class="card card-stat portal-metric"><div class="stat-label portal-metric-label">{{ $label }}</div><div class="stat-value portal-metric-value">{{ number_format($value) }}</div><div class="portal-metric-note">{{ $note }}</div></div>
     @endforeach
 </div>
-@if(session('success'))<div class="portal-auth-status" role="status">{{ session('success') }}</div>@endif
+@if(session('success'))<div x-data="{ feedbackVisible: true }" x-show="feedbackVisible" x-init="setTimeout(() => feedbackVisible = false, 3000)" class="portal-auth-status" role="status">{{ session('success') }}</div>@endif
 <div class="portal-dashboard-grid">
     <section class="card portal-card" aria-labelledby="recent-heading"><div class="card-header portal-card-header"><div><h2 id="recent-heading">Recent requests</h2><p class="portal-card-subtitle">Your latest submissions and their current status</p></div><a class="portal-inline-link" href="{{ route('student.requests.index') }}">View all →</a></div>
         <div class="portal-table-wrap"><table class="table table-custom portal-table"><thead><tr><th>Document / request</th><th>Status</th><th>Requested</th><th>Actions</th></tr></thead><tbody>

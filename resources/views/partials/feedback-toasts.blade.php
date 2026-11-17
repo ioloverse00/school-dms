@@ -12,7 +12,7 @@
             $feedback[] = ['tone' => $tone, 'message' => $message];
         }
     }
-    if (collect($errors->getBags())->contains(fn($bag) => $bag->any())) $feedback[] = ['tone' => 'danger', 'message' => 'The action could not be completed. Please review the errors on this page.'];
+    if (collect($errors->getBags())->contains(fn($bag) => $bag->any())) $feedback[] = ['tone' => 'danger', 'message' => request()->routeIs('login') ? $errors->first() : 'The action could not be completed. Please review the errors on this page.'];
 @endphp
 <div id="portal-feedback-toasts" class="portal-toast-container" aria-label="Action feedback">
 @foreach($feedback as $notice)

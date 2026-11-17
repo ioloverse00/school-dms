@@ -6,7 +6,7 @@
     <h2 class="my-6 text-2xl font-semibold text-gray-700 dark:text-gray-200">Student Category Weight</h2>
 
     @if(session('success'))
-    <div class="p-4 mb-6 text-sm text-green-700 bg-green-100 rounded-lg">{{ session('success') }}</div>
+    <div x-data="{ feedbackVisible: true }" x-show="feedbackVisible" x-init="setTimeout(() => feedbackVisible = false, 3000)" class="p-4 mb-6 text-sm text-green-700 bg-green-100 rounded-lg">{{ session('success') }}</div>
     @endif
 
     <div class="card spark-form-card w-full overflow-hidden rounded-lg shadow-xs bg-white dark:bg-gray-800">

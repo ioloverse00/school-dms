@@ -10,8 +10,8 @@
 <div class="portal-page-header calendar-page-heading"><div><h1 class="portal-heading">Academic calendar</h1><p class="portal-subtitle">Enrollment, exams, graduation and office schedules in one place.</p></div>
 @if($canEdit && !$formKind && $selectedYear)<div class="d-flex flex-wrap gap-2"><a class="btn btn-outline-secondary" href="{{ route($calendarRoute, array_merge($calendarParams, ['form' => 'term'])) }}">Add semester</a><a class="btn btn-primary" href="{{ route($calendarRoute, array_merge($calendarParams, ['form' => 'event'])) }}">Add event</a></div>@endif
 </div>
-@if(session('success'))<div class="alert alert-success mb-4" role="status">{{ session('success') }}</div>@endif
-@if($errors->any())<div class="alert alert-danger mb-4" role="alert"><strong>Please check the following:</strong><ul class="mb-0 mt-2">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>@if($errors->has('revision'))<p class="mb-0 mt-2">Reload this page before editing again.</p>@endif</div>@endif
+@if(session('success'))<div x-data="{ feedbackVisible: true }" x-show="feedbackVisible" x-init="setTimeout(() => feedbackVisible = false, 3000)" class="alert alert-success mb-4" role="status">{{ session('success') }}</div>@endif
+@if($errors->any())<div class="alert alert-danger mb-4" role="alert" x-data="{ errorVisible: true }" x-show="errorVisible" style="position:relative;padding-right:48px"><button type="button" aria-label="Dismiss error message" @click="errorVisible = false" style="position:absolute;top:8px;right:8px;width:32px;height:32px;border:0;background:transparent;color:inherit;font-size:24px;line-height:1;cursor:pointer">&times;</button><strong>Please check the following:</strong><ul class="mb-0 mt-2">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>@if($errors->has('revision'))<p class="mb-0 mt-2">Reload this page before editing again.</p>@endif</div>@endif
 @if(!$formKind)
 <nav class="calendar-view-nav" aria-label="Calendar views">
 <a href="{{ route($calendarRoute, array_merge($calendarParams, ['panel' => 'years'])) }}" @if($panel === 'years') aria-current="page" @endif>Academic years</a>

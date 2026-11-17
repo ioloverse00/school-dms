@@ -1,12 +1,14 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Profile') }}
-        </h2>
-    </x-slot>
+@extends('layouts.dashboard')
+@section('title', 'Profile & account')
+@section('content')
+    <div class="portal-page-header">
+        <div>
+            <h1 class="portal-heading">{{ __('Profile') }}</h1>
+            <p class="portal-subtitle">Manage your account details and keep your password up to date.</p>
+        </div>
+    </div>
 
-    <div class="py-2 portal-profile-page">
-        <p class="profile-intro">Manage your account details and keep your password up to date.</p>
+    <div class="portal-profile-page">
         <div class="spark-profile-grid">
             <div class="card spark-form-card profile-account-card">
                 <div class="max-w-xl">
@@ -27,4 +29,4 @@
             </div>
         </div>
     </div>
-</x-app-layout>
+@endsection

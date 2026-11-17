@@ -1,5 +1,5 @@
 @if($errors->any())
-    <div class="portal-auth-errors" role="alert">
+    <div class="portal-auth-errors" role="alert" x-data="{ errorVisible: true }" x-show="errorVisible" style="position:relative;padding-right:48px"><button type="button" aria-label="Dismiss error message" @click="errorVisible = false" style="position:absolute;top:8px;right:8px;width:32px;height:32px;border:0;background:transparent;color:inherit;font-size:24px;line-height:1;cursor:pointer">&times;</button>
         <strong>{{ $editConflict ? 'Changes were not saved. Review the latest request.' : 'Please check the form.' }}</strong>
         <ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
         @if($editConflict && session()->hasOldInput('status'))

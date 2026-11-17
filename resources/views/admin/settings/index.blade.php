@@ -8,7 +8,7 @@
     <p class="mb-4"><a class="btn btn-outline-secondary" href="{{ route('admin.settings.academic-calendar') }}">Academic calendar</a></p>
 
     @if(session('success'))
-    <div class="p-4 mb-6 text-sm text-green-700 bg-green-100 rounded-lg">
+    <div x-data="{ feedbackVisible: true }" x-show="feedbackVisible" x-init="setTimeout(() => feedbackVisible = false, 3000)" class="p-4 mb-6 text-sm text-green-700 bg-green-100 rounded-lg">
         {{ session('success') }}
     </div>
     @endif

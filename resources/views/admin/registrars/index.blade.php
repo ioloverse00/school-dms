@@ -2,7 +2,7 @@
 
 @section('content')
 @error('account')
-<div class="alert alert-danger" role="alert">{{ $message }}</div>
+<div class="alert alert-danger" role="alert" x-data="{ errorVisible: true }" x-show="errorVisible" style="position:relative;padding-right:48px"><button type="button" aria-label="Dismiss error message" @click="errorVisible = false" style="position:absolute;top:8px;right:8px;width:32px;height:32px;border:0;background:transparent;color:inherit;font-size:24px;line-height:1;cursor:pointer">&times;</button>{{ $message }}</div>
 @enderror
 <div class="w-full" x-data="registrarModal()">
     <div class="flex justify-between items-center my-6">
@@ -16,7 +16,7 @@
     </div>
 
     @if(session('success'))
-    <div class="p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg">
+    <div x-data="{ feedbackVisible: true }" x-show="feedbackVisible" x-init="setTimeout(() => feedbackVisible = false, 3000)" class="p-4 mb-4 text-sm text-green-700 bg-green-100 rounded-lg">
         {{ session('success') }}
     </div>
     @endif
@@ -43,8 +43,8 @@
                                     <div class="absolute inset-0 rounded-full shadow-inner" aria-hidden="true"></div>
                                 </div>
                                 <div>
-                                    <p class="font-semibold">{{ $registrar->name }}</p>
-                                    <p class="text-xs text-gray-600 dark:text-gray-400">{{ $registrar->email }}</p>
+                                    <div class="portal-person">{{ $registrar->name }}</div>
+                                    <div class="portal-table-sub">{{ $registrar->email }}</div>
                                 </div>
                             </div>
                         </td>
@@ -113,7 +113,7 @@
             </header>
 
             @if($errors->any() && old('_modal') === 'create')
-            <div class="mb-4 p-3 text-sm text-red-700 bg-red-100 rounded-lg">
+            <div class="mb-4 p-3 text-sm text-red-700 bg-red-100 rounded-lg" role="alert" x-data="{ errorVisible: true }" x-show="errorVisible" style="position:relative;padding-right:48px"><button type="button" aria-label="Dismiss error message" @click="errorVisible = false" style="position:absolute;top:8px;right:8px;width:32px;height:32px;border:0;background:transparent;color:inherit;font-size:24px;line-height:1;cursor:pointer">&times;</button>
                 <ul class="list-disc list-inside">
                     @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
                 </ul>
@@ -185,7 +185,7 @@
             </header>
 
             @if($errors->any() && old('_modal') === 'edit')
-            <div class="mb-4 p-3 text-sm text-red-700 bg-red-100 rounded-lg">
+            <div class="mb-4 p-3 text-sm text-red-700 bg-red-100 rounded-lg" role="alert" x-data="{ errorVisible: true }" x-show="errorVisible" style="position:relative;padding-right:48px"><button type="button" aria-label="Dismiss error message" @click="errorVisible = false" style="position:absolute;top:8px;right:8px;width:32px;height:32px;border:0;background:transparent;color:inherit;font-size:24px;line-height:1;cursor:pointer">&times;</button>
                 <ul class="list-disc list-inside">
                     @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
                 </ul>
