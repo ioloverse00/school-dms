@@ -46,7 +46,7 @@ jobs:
                   known = {'domains', 'school-dms.online', 'public_html', 'dms-staging-app', 'staging'}
                   root_names = {name.rstrip('/').rsplit('/', 1)[-1] for name in ftp.nlst()}
                   print('Known folders at FTP root:', ', '.join(sorted(known & root_names)) or '(none)')
-                  for candidate in ('domains/school-dms.online', 'school-dms.online'):
+                  for candidate in ('..', '/', 'domains/school-dms.online', 'school-dms.online'):
                       if 'dms-staging-app' in root_names:
                           break
                       try:
