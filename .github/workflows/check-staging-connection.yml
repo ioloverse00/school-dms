@@ -2,6 +2,9 @@ name: Check staging connection
 
 on:
   workflow_dispatch:
+  push:
+    branches: [staging]
+    paths: [.github/workflows/check-staging-connection.yml]
 
 permissions:
   contents: read
