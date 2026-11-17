@@ -28,18 +28,27 @@ jobs:
 
           if not all(os.environ.get(key) for key in ('FTP_HOST', 'FTP_USER', 'FTP_PASSWORD')):
               sys.exit('Missing staging FTP secrets. No changes made.')
+          phase = 'connect'
           try:
               with ftplib.FTP_TLS(context=ssl.create_default_context(), timeout=30) as ftp:
                   ftp.connect(os.environ['FTP_HOST'], 21)
+                  phase = 'TLS negotiation'
+                  ftp.auth()
+                  phase = 'login'
                   ftp.login(os.environ['FTP_USER'], os.environ['FTP_PASSWORD'])
+                  print('TLS and login passed.')
+                  phase = 'encrypted data channel'
                   ftp.prot_p()
+                  phase = 'FTP root'
                   root = ftp.pwd()
                   for folder, required in (
                       ('dms-staging-app', {'artisan', 'app', 'vendor'}),
                       ('public_html/staging', {'index.php', 'assets'}),
                   ):
+                      phase = 'folder access: ' + folder
                       ftp.cwd(root)
                       ftp.cwd(folder)
+                      phase = 'folder listing: ' + folder
                       names = {name.rstrip('/').rsplit('/', 1)[-1] for name in ftp.nlst()}
                       if not required.issubset(names):
                           sys.exit('Staging folder validation failed. No changes made.')
@@ -47,7 +56,16 @@ jobs:
                   print('Encrypted FTP and folder checks passed. No files uploaded or changed.')
           except Exception as error:
               # Never print server responses that may echo credentials.
-              print('Connection check failed:', type(error).__name__)
+              print('Connection check failed at:', phase)
+              print('Error type:', type(error).__name__)
+              if isinstance(error, ftplib.error_perm):
+                  code = str(error)[:3]
+                  if code.isdigit():
+                      print('FTP status code:', code)
+                  if phase == 'login':
+                      print('Check the dedicated FTP username/password and the hosting server endpoint.')
+                  else:
+                      print('Check the FTP account directory and staging folder access.')
               if isinstance(error, ssl.SSLCertVerificationError):
                   print('Use the Hostinger FTP hostname matching its TLS certificate. TLS verification remains enabled.')
               sys.exit(1)
