@@ -1,0 +1,53 @@
+name: Deploy staging
+
+on:
+  push:
+    branches: [staging]
+    paths:
+      - 'app/**'
+      - 'resources/views/**'
+      - 'public/assets/**'
+      - 'scripts/deploy/staging_ftps.py'
+      - '.github/workflows/deploy-staging.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: school-dms-staging-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, dom, curl, zip, pdo_sqlite
+          coverage: none
+      - name: Install test dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Prepare isolated test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+      - name: Test application and templates
+        run: |
+          php artisan test --compact
+          node --test tests/Frontend/*.test.cjs
+          php artisan view:cache
+          php artisan view:clear
+          python3 -m unittest discover -s tests/Deployment -p 'test_*.py'
+      - name: Deploy approved code patch over verified FTPS
+        env:
+          FTP_HOST: ${{ secrets.STAGING_FTP_HOST }}
+          FTP_USER: ${{ secrets.STAGING_FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.STAGING_FTP_PASSWORD }}
+        run: python3 scripts/deploy/staging_ftps.py
