@@ -44,7 +44,13 @@
         <span class="portal-status">{{ ucfirst(str_replace('_', ' ', $event['type'])) }}</span>
         <h3>@if($canEdit)<a href="{{ route($calendarRoute, array_merge($calendarParams, ['edit_event' => $eventId])) }}#calendar-forms">{{ $event['name'] }}</a>@else{{ $event['name'] }}@endif</h3>
         <p>{{ $event['starts_on'] }} &ndash; {{ $event['ends_on'] }}</p>
-        <p>{{ $calendar['terms'][$event['term_id']]['academic_year'] }} / {{ $calendar['terms'][$event['term_id']]['name'] }}</p>
+        <p>
+        @if($event['term_id'])
+            {{ $calendar['terms'][$event['term_id']]['academic_year'] }} / {{ $calendar['terms'][$event['term_id']]['name'] }}
+        @else
+            {{ $calendar['years'][$event['year_id']]['name'] }} / Academic year holiday
+        @endif
+        </p>
         <p>{{ $event['office_closed'] ? 'Office closed' : 'Normal office schedule' }}{{ $event['archived'] ? ' · Archived' : '' }}</p>
     </article>
     @empty<p class="portal-note">No events in this month. Use the month picker to browse historical or upcoming schedules.</p>@endforelse

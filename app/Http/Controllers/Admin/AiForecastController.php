@@ -48,7 +48,7 @@ class AiForecastController extends Controller
                 $validated = app(ForecastOutputValidator::class)->validate($cached['forecast'], $cached['history']['per_document_type'], $months, $expectedMonths);
                 $validated['summary'] = $summaryBuilder->build($validated, $history);
                 $payload = ['cached' => true, 'generated_at' => $cached['generated_at'], 'forecast' => $validated,
-                    'stale' => !$samePeriod || !$cache->isFresh($cached, (int) config('gemini.cache_ttl_minutes', 720)),
+                    'stale' => !$samePeriod || !$cache->isFresh($cached, (int) config('openai.cache_ttl_minutes', 720)),
                     'next_scheduled_at' => \App\Services\ForecastRefreshSchedule::next()];
                 if ($request->boolean('include_history')) { $payload['history'] = $cached['history']; }
                 if ($request->isMethod('get') || (!$request->boolean('force') && !$payload['stale'])) {
@@ -61,7 +61,7 @@ class AiForecastController extends Controller
         if ($request->isMethod('get')) {
             return response()->json(['cached' => false, 'pending' => true, 'next_scheduled_at' => \App\Services\ForecastRefreshSchedule::next()], 202);
         }
-        if (!config('gemini.enabled', false)) {
+        if (!config('openai.forecasting_enabled', false)) {
             return response()->json(['error' => true, 'message' => 'AI forecasting is disabled.'], 503);
         }
         $lock = Cache::lock('ai-forecast-generation', 180);

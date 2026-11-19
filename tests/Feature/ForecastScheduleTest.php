@@ -23,7 +23,7 @@ class ForecastScheduleTest extends TestCase
 
     public function test_disabled_command_does_not_call_provider_or_change_cache(): void
     {
-        config(['gemini.enabled' => false]);
+        config(['openai.forecasting_enabled' => false]);
         SystemSetting::set('ai_document_forecast_cache', ['previous' => true]);
         $this->mock(DocumentTrendForecaster::class)->shouldNotReceive('forecastWithHistory');
         $this->artisan('ai:refresh-forecast')->assertSuccessful();
@@ -32,7 +32,7 @@ class ForecastScheduleTest extends TestCase
 
     public function test_success_saves_shared_parameters_and_failure_keeps_previous_result(): void
     {
-        config(['gemini.enabled'=>true, 'gemini.api_key'=>'fake']);
+        config(['openai.forecasting_enabled'=>true, 'openai.api_key'=>'fake']);
         $months = \App\Services\ForecastOutputValidator::months(12);
         $forecast = ['months'=>$months, 'overall_forecast'=>array_fill(0,12,10), 'per_document_type'=>[]];
         $mock = $this->mock(DocumentTrendForecaster::class);

@@ -41,4 +41,28 @@ class NotificationControlsTest extends TestCase
   $this->assertStringContainsString('Notice '.$unread,$panel->json('html'));
   $this->assertStringNotContainsString('Notice '.$foreign,$panel->json('html'));
  }
+ public function test_notification_page_paginates_and_preserves_unread_filter_without_exposing_other_users(): void {
+  Role::findOrCreate('student');Role::findOrCreate('admin');
+  $user=User::factory()->create();$user->assignRole('student');
+  $other=User::factory()->create();$foreign=$this->notification($other);
+  $read=$this->notification($user,true);
+  for($i=0;$i<23;$i++)$this->notification($user);
+  $response=$this->actingAs($user)->get(route('notifications.index',['notification_filter'=>'unread']));
+  $response->assertOk()->assertViewHas('notifications',fn($items)=>$items->total()===23&&$items->count()===20)
+   ->assertDontSee('Notice '.$read)->assertDontSee('Notice '.$foreign)->assertSee('notification_filter=unread&amp;page=2',false)
+   ->assertSee('assets/images/favicon.svg');
+  $this->get(route('notifications.index',['notification_filter'=>'unread','page'=>2]))->assertOk()
+   ->assertViewHas('notifications',fn($items)=>$items->count()===3);
+  $this->get(route('notifications.index'))->assertOk()->assertViewHas('notifications',fn($items)=>$items->total()===24);
+  $panel=$this->getJson(route('notifications.panel'))->assertOk();
+  $this->assertStringContainsString('View all notifications',$panel->json('html'));
+ }
+ public function test_notifications_page_requires_login_and_supports_each_portal(): void {
+  $this->get(route('notifications.index'))->assertRedirect(route('login'));
+  $this->get(route('login'))->assertSee('assets/images/favicon.svg');
+  foreach(['admin','registrar','student'] as $role) {
+   Role::findOrCreate($role);$user=User::factory()->create();$user->assignRole($role);
+   $this->actingAs($user)->get(route('notifications.index'))->assertOk()->assertSee('No notifications yet.');
+  }
+ }
 }

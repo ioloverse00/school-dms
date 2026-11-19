@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class DocumentTrendForecaster
 {
-    public function __construct(private readonly GeminiClient $gemini)
+    public function __construct(private readonly OpenAIClient $provider)
     {
     }
 
@@ -51,7 +51,7 @@ class DocumentTrendForecaster
 
         $prompt = $this->buildPrompt($series, $perTypeSeries, $forecastMonths, $context);
 
-        $output = $this->gemini->generateJson($prompt, [
+        $output = $this->provider->generateJson($prompt, [
             'temperature' => 0.1,
             'response_schema' => ForecastResponseSchema::make($forecastMonths, count($perTypeSeries)),
         ]);

@@ -6,7 +6,6 @@ class ForecastResponseSchema
     public static function make(int $horizon, int $typeCount): array
     {
         $text = ['type'=>'STRING'];
-        // Large nested length/range constraints exceed Gemini's serving state limit.
         // Describe lengths here; enforce every bound in ForecastOutputValidator.
         $count = ['type'=>'INTEGER'];
         $list = fn($item,$min=0,$max=20)=>['type'=>'ARRAY','items'=>$item,

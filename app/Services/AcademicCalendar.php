@@ -62,16 +62,23 @@ class AcademicCalendar
             if ($id && !$before) {
                 throw ValidationException::withMessages(['id' => 'This calendar item no longer exists.']);
             }
-            $fields = ['years' => ['name', 'starts_on', 'ends_on'], 'terms' => ['name', 'year_id', 'starts_on', 'ends_on'], 'events' => ['name', 'term_id', 'type', 'starts_on', 'ends_on', 'office_closed']];
+            $fields = ['years' => ['name', 'starts_on', 'ends_on'], 'terms' => ['name', 'year_id', 'starts_on', 'ends_on'], 'events' => ['name', 'year_id', 'term_id', 'type', 'starts_on', 'ends_on', 'office_closed']];
             $item = collect($input)->only($fields[$bucket])->all();
             $item['archived'] = (bool) ($input['archived'] ?? false);
             if ($bucket === 'events') {
+                $item['term_id'] ??= null;
                 $term = $calendar['terms'][$item['term_id']] ?? null;
                 $bounds = $term ? $this->eventBounds($item['type'], $term, $calendar['years'][$term['year_id']]) : null;
+                if ($item['type'] === 'holiday' && !$item['term_id']) $bounds = $calendar['years'][$item['year_id'] ?? ''] ?? null;
                 if (!$bounds || $item['starts_on'] < $bounds['starts_on'] || $item['ends_on'] > $bounds['ends_on']) {
                     throw ValidationException::withMessages(['term_id' => $item['type'] === 'graduation' ? 'Graduation dates must fall within the selected semester’s academic year.' : 'Event dates must fall within an existing semester.']);
                 }
                 $item['office_closed'] = (bool) ($item['office_closed'] ?? false);
+                $classification = $before['holiday_classification'] ?? $input['holiday_classification'] ?? null;
+                if ($item['type'] === 'holiday' && in_array($classification, ['regular', 'special_non_working', 'special_working'], true)) {
+                    $item['holiday_classification'] = $classification;
+                    if ($classification === 'regular') $item['office_closed'] = true;
+                }
             } elseif ($bucket === 'terms') {
                 $year = $calendar['years'][$item['year_id']] ?? null;
                 if (!$year || $item['starts_on'] < $year['starts_on'] || $item['ends_on'] > $year['ends_on']) {
@@ -90,6 +97,11 @@ class AcademicCalendar
                     }
                 }
             } else {
+                foreach ($calendar['events'] as $event) {
+                    if ($id && ($event['year_id'] ?? null) === $id && ($event['starts_on'] < $item['starts_on'] || $event['ends_on'] > $item['ends_on'])) {
+                        throw ValidationException::withMessages(['starts_on' => 'These dates would exclude a saved holiday. Update it first.']);
+                    }
+                }
                 foreach ($calendar['years'] as $otherId => $year) {
                     if ($otherId !== $id && mb_strtolower($year['name']) === mb_strtolower($item['name'])) {
                         throw ValidationException::withMessages(['name' => 'That academic year already exists.']);

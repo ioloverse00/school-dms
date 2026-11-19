@@ -7,7 +7,7 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\ForecastOutputValidator;
 use App\Services\DocumentTrendForecaster;
-use App\Services\GeminiClient;
+use App\Services\OpenAIClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -22,7 +22,7 @@ class ForecastSafetyTest extends TestCase
     {
         parent::setUp();
         $this->travelTo(now()->setDate(2026, 3, 31)->setTime(0, 0));
-        config(['gemini.enabled' => true, 'gemini.api_key' => 'test-secret', 'gemini.model' => 'test-model']);
+        config(['openai.forecasting_enabled' => true, 'openai.api_key' => 'test-secret', 'openai.model' => 'test-model']);
         Http::preventStrayRequests();
         foreach (['admin', 'registrar', 'student'] as $role) { Role::findOrCreate($role); }
     }
@@ -49,7 +49,7 @@ class ForecastSafetyTest extends TestCase
 
     private function fakeOutput(array $output): void
     {
-        Http::fake(['*' => Http::response(['candidates' => [['content' => ['parts' => [['text' => json_encode($output)]]]]]])]);
+        Http::fake(['*' => Http::response(['status' => 'completed', 'output' => [['type' => 'message', 'content' => [['type' => 'output_text', 'text' => json_encode($output)]]]]])]);
     }
 
     public function test_generation_uses_saved_calendar_dates_instead_of_old_fixed_dates(): void
@@ -61,7 +61,7 @@ class ForecastSafetyTest extends TestCase
         $this->fakeOutput($this->validForecast());
         app(DocumentTrendForecaster::class)->forecastWithHistory(24, 2);
         Http::assertSent(function ($request) {
-            $prompt = $request['contents'][0]['parts'][0]['text'];
+            $prompt = $request['input'];
             return str_contains($prompt, 'UAT graduation') && str_contains($prompt, '2026-05-04')
                 && str_contains($prompt, 'Historical enrollment')
                 && !str_contains($prompt, 'The school year runs from June 15');
@@ -86,7 +86,7 @@ class ForecastSafetyTest extends TestCase
         $this->actingAs($this->staff('registrar'))->getJson('/registrar/ai-forecast?months=2')->assertOk()->assertJsonPath('cached', true);
         $this->actingAs($admin)->postJson('/admin/ai-forecast?months=2')->assertOk()->assertJsonPath('cached', true);
         Http::assertSentCount(1);
-        Http::assertSent(fn ($request) => !str_contains($request->url(), 'test-secret') && $request->hasHeader('x-goog-api-key', 'test-secret'));
+        Http::assertSent(fn ($request) => !str_contains($request->url(), 'test-secret') && $request->hasHeader('Authorization', 'Bearer test-secret'));
         $this->travel(13)->hours();
         $this->getJson('/admin/ai-forecast?months=2')->assertOk()->assertJsonPath('stale', true);
         Http::assertSentCount(1);
@@ -159,13 +159,6 @@ class ForecastSafetyTest extends TestCase
         $this->assertDatabaseMissing('system_settings', ['key' => 'ai_document_forecast_cache']);
     }
 
-    public function test_mixed_text_json_parser_handles_quotes_escapes_and_braces_in_strings(): void
-    {
-        $data = ['note' => 'Quoted "}" and [brackets] with backslash \\ then {', 'nested' => [['value' => 1]]];
-        Http::fake(['*' => Http::response(['candidates' => [['content' => ['parts' => [['text' => 'Here is JSON: '.json_encode($data).' End.']]]]]])]);
-        $this->assertSame($data, app(GeminiClient::class)->generateJson('Test'));
-    }
-
     public function test_month_end_history_has_no_skipped_or_duplicate_months_and_prompt_is_contiguous(): void
     {
         $this->fakeOutput($this->validForecast());
@@ -173,7 +166,7 @@ class ForecastSafetyTest extends TestCase
         $history = $forecaster->perDocumentTypeHistory(6);
         $this->assertSame(['2025-10', '2025-11', '2025-12', '2026-01', '2026-02', '2026-03'], $history[0]['history']['labels']);
         $forecaster->forecast(6, 2);
-        Http::assertSent(fn ($request) => str_contains($request['contents'][0]['parts'][0]['text'], '["2026-04","2026-05"]'));
+        Http::assertSent(fn ($request) => str_contains($request['input'], '["2026-04","2026-05"]'));
     }
 
     public function test_february_workload_uses_february_days_even_when_today_is_the_31st(): void
@@ -200,7 +193,7 @@ class ForecastSafetyTest extends TestCase
 
     public function test_disabled_forecasting_and_corrupt_cache_do_not_trigger_provider_work(): void
     {
-        config(['gemini.enabled' => false]);
+        config(['openai.forecasting_enabled' => false]);
         SystemSetting::set('ai_document_forecast_cache', ['forecast' => ['months' => ['bad']]]);
         $this->actingAs($this->staff('admin'))->getJson('/admin/ai-forecast')->assertStatus(202);
         $this->postJson('/admin/ai-forecast')->assertStatus(503);
@@ -223,7 +216,7 @@ class ForecastSafetyTest extends TestCase
         $originalId = $output['per_document_type'][0]['document_type_id'];
         Http::fake(function () use ($output) {
             DocumentType::create(['name' => 'New document during generation', 'category' => 'academic', 'weight' => 1]);
-            return Http::response(['candidates' => [['content' => ['parts' => [['text' => json_encode($output)]]]]]]);
+            return Http::response(['status' => 'completed', 'output' => [['type' => 'message', 'content' => [['type' => 'output_text', 'text' => json_encode($output)]]]]]);
         });
         $this->actingAs($this->staff('admin'))->postJson('/admin/ai-forecast?months=2&include_history=1')
             ->assertOk()->assertJsonCount(1, 'history.per_document_type')
@@ -236,20 +229,15 @@ class ForecastSafetyTest extends TestCase
         Http::assertSentCount(1);
     }
 
-    public function test_generation_derives_totals_and_uses_fast_json_mode_for_flash(): void
+    public function test_generation_derives_totals_and_uses_strict_openai_schema(): void
     {
         $output = $this->validForecast();
         $output['overall_forecast'] = [999, 999]; $output['volume_forecast']['total_requests'] = 1;
-        config(['gemini.model' => 'gemini-2.5-flash']);
-        Http::fake(['*' => Http::response(['candidates' => [['content' => ['parts' => [['text' => json_encode($output)]]]]]])]);
+        config(['openai.model' => 'test-model']);
+        Http::fake(['*' => Http::response(['status' => 'completed', 'output' => [['type' => 'message', 'content' => [['type' => 'output_text', 'text' => json_encode($output)]]]]])]);
         $this->actingAs($this->staff('admin'))->postJson('/admin/ai-forecast?months=2')->assertOk()
             ->assertJsonPath('forecast.overall_forecast', [10, 20])->assertJsonPath('forecast.volume_forecast.total_requests', 30);
-        Http::assertSent(fn($request) => $request['generationConfig']['responseMimeType'] === 'application/json'
-            && $request['generationConfig']['thinkingConfig']['thinkingBudget'] === 0
-            && $request['generationConfig']['responseSchema']['type'] === 'OBJECT'
-            && $request['generationConfig']['responseSchema']['properties']['months']['description'] === 'Exactly 2 entries.'
-            && !isset($request['generationConfig']['responseSchema']['properties']['months']['minItems'])
-            && in_array('per_document_type', $request['generationConfig']['responseSchema']['required'], true));
+        Http::assertSent(fn($request) => $request['store'] === false && $request['text']['format']['strict'] === true && $request['text']['format']['schema']['additionalProperties'] === false);
     }
 
     public function test_failure_logs_distinguish_safe_reasons_without_secret_or_body_disclosure(): void
@@ -259,8 +247,8 @@ class ForecastSafetyTest extends TestCase
         $cases = [
             ['configuration', 'provider_configuration', null, null],
             ['provider', 'provider_http', Http::response('private-body test-secret', 429), 429],
-            ['parsing', 'response_json', Http::response(['candidates' => [['content' => ['parts' => [['text' => 'private-body test-secret']]]]]]), null],
-            ['validation', 'schema_invalid', Http::response(['candidates' => [['content' => ['parts' => [['text' => json_encode($invalid)]]]]]]), null],
+            ['parsing', 'response_json', Http::response(['status' => 'completed', 'output' => [['type' => 'message', 'content' => [['type' => 'output_text', 'text' => 'private-body test-secret']]]]]), null],
+            ['validation', 'schema_invalid', Http::response(['status' => 'completed', 'output' => [['type' => 'message', 'content' => [['type' => 'output_text', 'text' => json_encode($invalid)]]]]]), null],
         ];
         $this->actingAs($this->staff('admin'));
         $contexts = [];
@@ -270,7 +258,7 @@ class ForecastSafetyTest extends TestCase
             ->andReturnUsing(function ($message, $context) use (&$contexts) { $contexts[] = $context; });
         foreach ($cases as [$stage, $reason, $response, $status]) {
             Cache::flush();
-            config(['gemini.api_key' => $response ? 'test-secret' : '']);
+            config(['openai.api_key' => $response ? 'test-secret' : '']);
             $providerResponse = $response;
             $response = $this->postJson('/admin/ai-forecast?months=2')->assertStatus(503)
                 ->assertDontSee('test-secret')->assertDontSee('private-body');
@@ -286,7 +274,7 @@ class ForecastSafetyTest extends TestCase
 
     public function test_cli_uses_the_same_safe_diagnostics(): void
     {
-        config(['gemini.api_key' => '']);
+        config(['openai.api_key' => '']);
         \Illuminate\Support\Facades\Log::shouldReceive('warning')->once()->withArgs(fn ($message, $context) =>
             $message === 'Forecast command failed.' && $context['reason'] === 'provider_configuration'
             && $context['stage'] === 'configuration' && isset($context['reference'])

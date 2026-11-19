@@ -144,6 +144,9 @@ class AcademicCalendarTest extends TestCase
 
     public function test_dataset_command_requires_isolation_and_refuses_overwrite(): void
     {
+        $originalStorage = app()->storagePath();
+        app()->useStoragePath($originalStorage.'/framework/testing/calendar-'.\Illuminate\Support\Str::uuid());
+        try {
         $this->artisan('forecast:demo-dataset', ['--seed' => 99123])->assertSuccessful();
         $file = storage_path('app/private/forecast-demo/seed-99123/weekly-requests.csv');
         $this->assertFileExists($file); $hash = hash_file('sha256', $file);
@@ -152,6 +155,9 @@ class AcademicCalendarTest extends TestCase
         $this->artisan('forecast:demo-dataset', ['--seed' => '../invalid'])->assertFailed();
         app()->detectEnvironment(fn () => 'local');
         $this->artisan('forecast:demo-dataset', ['--seed' => 99124])->assertFailed();
+        } finally {
+            app()->useStoragePath($originalStorage);
+        }
     }
 
     public function test_month_panel_handles_leap_year_and_invalid_months(): void

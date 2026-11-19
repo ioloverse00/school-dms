@@ -102,6 +102,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
     Route::get('/settings/academic-calendar', [\App\Http\Controllers\Admin\AcademicCalendarController::class, 'index'])->name('settings.academic-calendar');
     Route::post('/settings/academic-calendar', [\App\Http\Controllers\Admin\AcademicCalendarController::class, 'store'])->name('settings.academic-calendar.save');
+    Route::post('/settings/academic-calendar/holidays/check', [\App\Http\Controllers\Admin\HolidaySuggestionsController::class, 'check'])->middleware('throttle:3,10')->name('settings.academic-calendar.holidays.check');
+    Route::post('/settings/academic-calendar/holidays/apply', [\App\Http\Controllers\Admin\HolidaySuggestionsController::class, 'apply'])->name('settings.academic-calendar.holidays.apply');
     Route::get('/settings/programs', [SettingsController::class, 'programs'])->name('settings.programs');
     Route::get('/settings/student-types', [SettingsController::class, 'studentTypes'])->name('settings.student-types');
     Route::get('/settings/document-management/document-weights', [SettingsController::class, 'documentWeightsPage'])->name('settings.document-management.document-weights');
@@ -142,6 +144,16 @@ Route::middleware('auth')->group(function () {
 
         abort(403);
     })->name('files.view');
+
+    Route::get('/notifications', function (\Illuminate\Http\Request $request) {
+        $notificationFilter = $request->query('notification_filter') === 'unread' ? 'unread' : 'all';
+        $unreadCount = $request->user()->unreadNotifications()->count();
+        $notifications = $request->user()->notifications()
+            ->when($notificationFilter === 'unread', fn ($query) => $query->whereNull('read_at'))
+            ->orderByDesc('created_at')->orderByDesc('id')->paginate(20)->withQueryString();
+        return response()->view('notifications.index', compact('notificationFilter', 'unreadCount', 'notifications'))
+            ->header('Cache-Control', 'private, no-store');
+    })->name('notifications.index');
 
     Route::get('/notifications/panel', function (\Illuminate\Http\Request $request) {
         $notificationFilter = $request->query('notification_filter') === 'unread' ? 'unread' : 'all';

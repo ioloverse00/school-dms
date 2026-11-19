@@ -14,8 +14,8 @@ class RefreshForecastCache extends Command
 
     public function handle(DocumentTrendForecaster $forecaster, AiForecastCache $cache, ForecastSummaryBuilder $summary): int
     {
-        if (!config('gemini.enabled') || !config('gemini.api_key')) {
-            $this->info('Skipped: Gemini is disabled or not configured.'); return self::SUCCESS;
+        if (!config('openai.forecasting_enabled') || !config('openai.api_key')) {
+            $this->info('Skipped: forecasting is disabled or not configured.'); return self::SUCCESS;
         }
         $lock = Cache::lock('ai-forecast-generation', 180);
         if (!$lock->get()) { $this->warn('Skipped: generation is already running.'); return self::SUCCESS; }

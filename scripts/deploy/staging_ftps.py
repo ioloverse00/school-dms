@@ -1,7 +1,7 @@
 """Deploy code changes since the initial staging release; preserve runtime data.
 
-This deliberately rejects dependency/schema changes and deletions: those require
-a separate release process. No credentials or server responses are logged.
+Dependency/schema changes and unapproved deletions require a separate release.
+No credentials or server responses are logged.
 """
 import ftplib
 import hashlib
@@ -15,13 +15,15 @@ import uuid
 import urllib.request
 
 BASE = '78db72aaade1fa217898ef9ade01b3e7dd902647'
+CODE_PREFIXES = ('app/', 'resources/views/', 'config/', 'routes/', 'public/assets/')
+APPROVED_DELETIONS = {'app/Services/GeminiClient.php'}
 
 
 def destination(source):
     path = PurePosixPath(source)
     if '..' in path.parts or path.is_absolute() or '\\' in source:
         raise ValueError('Unsafe source path')
-    if source.startswith(('app/', 'resources/views/')):
+    if source.startswith(('app/', 'resources/views/', 'config/', 'routes/')):
         return 'dms-staging-app/' + source
     if source.startswith('public/assets/'):
         return 'public_html/staging/' + source.removeprefix('public/')
@@ -35,7 +37,10 @@ def payload():
     for status, source in zip(fields[::2], fields[1::2]):
         if source in ('composer.json', 'composer.lock') or source.startswith('database/migrations/'):
             raise ValueError('Dependency/schema changes require a separate release')
-        if not source.startswith(('app/', 'resources/views/', 'public/assets/')):
+        if not source.startswith(CODE_PREFIXES):
+            continue
+        if status == 'D' and source in APPROVED_DELETIONS:
+            result.append((None, destination(source)))
             continue
         if status not in ('A', 'M'):
             raise ValueError('Code deletions require a separate release')
@@ -93,6 +98,9 @@ def deploy(ftp, files, root, release, verify=None):
     try:
         # Upload and verify every temporary file before replacing any live file.
         for source, target in files:
+            if source is None:
+                staged.append(None)
+                continue
             final = root + '/' + target
             temp = final + '.' + release + '.tmp'
             mkdirs(ftp, str(PurePosixPath(final).parent))
@@ -110,7 +118,21 @@ def deploy(ftp, files, root, release, verify=None):
             if existed:
                 ftp.rename(final, old)
             activated.append((final, old, existed))
-            ftp.rename(temp, final)
+            if temp is not None:
+                ftp.rename(temp, final)
+        # Retire generated config/route caches so this release loads new code.
+        # Keep them in the rollback backup, with the same restoration handling.
+        for filename in ('config.php', 'routes-v7.php'):
+            final = root + '/dms-staging-app/bootstrap/cache/' + filename
+            try:
+                ftp.cwd(str(PurePosixPath(final).parent))
+            except ftplib.error_perm:
+                continue
+            if filename in names(ftp):
+                old = backup + '/runtime-cache/' + filename
+                mkdirs(ftp, str(PurePosixPath(old).parent))
+                ftp.rename(final, old)
+                activated.append((final, old, True))
         if verify:
             verify()
         print('Deployed', len(files), 'verified code files.')
@@ -131,6 +153,8 @@ def deploy(ftp, files, root, release, verify=None):
         raise
     finally:
         for temp in staged:
+            if temp is None:
+                continue
             try:
                 ftp.delete(temp)
             except Exception:
@@ -154,6 +178,12 @@ def main():
                     raise ValueError('Staging login health check failed')
                 if b'Sign in' not in response.read(200000):
                     raise ValueError('Expected login form not found')
+            with urllib.request.urlopen('https://staging.school-dms.online/assets/images/favicon.svg', timeout=30) as response:
+                if response.read(100000) != Path('public/assets/images/favicon.svg').read_bytes():
+                    raise ValueError('Staging favicon verification failed')
+            with urllib.request.urlopen('https://staging.school-dms.online/notifications', timeout=30) as response:
+                if response.status != 200 or response.url != 'https://staging.school-dms.online/login':
+                    raise ValueError('Notifications authentication check failed')
             print('Staging HTTPS login check passed.')
         deploy(ftp, files, root, release, verify)
 

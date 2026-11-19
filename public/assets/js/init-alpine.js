@@ -65,7 +65,7 @@ function data() {
         first.focus()
       }
     },
-    isNotificationsMenuOpen: ['all', 'unread'].includes(new URLSearchParams(window.location.search).get('notification_filter')),
+    isNotificationsMenuOpen: !/\/notifications\/?$/.test(window.location.pathname) && ['all', 'unread'].includes(new URLSearchParams(window.location.search).get('notification_filter')),
     toggleNotificationsMenu() {
       this.isNotificationsMenuOpen = !this.isNotificationsMenuOpen
     },

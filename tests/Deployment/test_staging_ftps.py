@@ -48,6 +48,8 @@ class DeploymentTests(unittest.TestCase):
     def test_targets_only_expected_code_and_public_assets(self):
         self.assertEqual(module.destination('app/a.php'), 'dms-staging-app/app/a.php')
         self.assertEqual(module.destination('public/assets/b.css'), 'public_html/staging/assets/b.css')
+        self.assertEqual(module.destination('config/openai.php'), 'dms-staging-app/config/openai.php')
+        self.assertEqual(module.destination('routes/web.php'), 'dms-staging-app/routes/web.php')
         for path in ('.env', 'storage/a', 'database/a', 'public/index.php', '../app/a', '/app/a', 'app/../.env'):
             with self.assertRaises(ValueError):
                 module.destination(path)
@@ -94,3 +96,30 @@ class DeploymentTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.run_deploy(ftp, fail_health_check)
         self.assertEqual(ftp.files, before)
+
+    def test_retired_code_is_backed_up_and_restored_on_failure(self):
+        ftp = FakeFTP()
+        final = '/site/dms-staging-app/app/obsolete.php'
+        ftp.files[final] = b'old-code'
+        def fail():
+            raise ValueError('Unhealthy release')
+        with self.assertRaises(ValueError):
+            module.deploy(ftp, [(None, 'dms-staging-app/app/obsolete.php')], '/site', 'retire', fail)
+        self.assertEqual(ftp.files[final], b'old-code')
+        module.deploy(ftp, [(None, 'dms-staging-app/app/obsolete.php')], '/site', 'retire-ok')
+        self.assertNotIn(final, ftp.files)
+
+    def test_generated_caches_are_retired_with_rollback(self):
+        ftp = FakeFTP()
+        directory = '/site/dms-staging-app/bootstrap/cache'
+        ftp.dirs.add(directory)
+        final = directory + '/config.php'
+        ftp.files[final] = b'cached-config'
+        before = dict(ftp.files)
+        def fail():
+            raise ValueError('Unhealthy release')
+        with self.assertRaises(ValueError):
+            self.run_deploy(ftp, fail)
+        self.assertEqual(ftp.files, before)
+        self.run_deploy(ftp)
+        self.assertNotIn(final, ftp.files)

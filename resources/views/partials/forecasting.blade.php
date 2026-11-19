@@ -1,4 +1,4 @@
-@php($geminiEnabled = (bool) config('gemini.enabled', false))
+@php($geminiEnabled = (bool) config('openai.forecasting_enabled', false))
 <div class="portal-analytics">
     <div class="mb-4 d-flex flex-wrap align-items-center justify-content-between gap-2">
         <div><div class="subheader">Registrar analytics</div><h2 class="h2 mb-1">Document demand &amp; forecasting</h2><p class="text-secondary mb-0">Historical requests include archived records. Forecasts are estimates.</p></div>

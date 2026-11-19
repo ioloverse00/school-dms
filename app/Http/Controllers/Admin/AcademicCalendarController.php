@@ -18,7 +18,7 @@ class AcademicCalendarController extends Controller
         $editYear = is_string($request->query('edit_year')) ? $request->query('edit_year') : null;
         $request->validate(['month' => ['nullable', 'date_format:Y-m'], 'year' => ['nullable', 'uuid']]);
         $contextTerm = $editTerm ?? ($calendar['events'][$editEvent ?? '']['term_id'] ?? null);
-        $yearId = $request->query('year') ?: ($editYear ?? ($calendar['terms'][$contextTerm ?? '']['year_id'] ?? null));
+        $yearId = $request->query('year') ?: ($editYear ?? ($calendar['events'][$editEvent ?? '']['year_id'] ?? $calendar['terms'][$contextTerm ?? '']['year_id'] ?? null));
         if ($yearId) abort_unless(isset($calendar['years'][$yearId]), 404);
         $contextDate = $calendar['events'][$editEvent ?? '']['starts_on'] ?? $calendar['terms'][$editTerm ?? '']['starts_on'] ?? now()->toDateString();
         if (!$yearId) {
@@ -32,7 +32,7 @@ class AcademicCalendarController extends Controller
             $month = \Carbon\CarbonImmutable::parse($selectedYear['starts_on'])->startOfMonth();
         }
         $yearTerms = collect($calendar['terms'])->filter(fn ($term) => !$yearId || $term['year_id'] === $yearId);
-        $monthEvents = collect($calendar['events'])->filter(fn ($event) => $yearTerms->has($event['term_id']) && $event['starts_on'] <= $month->endOfMonth()->toDateString() && $event['ends_on'] >= $month->toDateString())->sortBy('starts_on');
+        $monthEvents = collect($calendar['events'])->filter(fn ($event) => (($event['year_id'] ?? null) === $yearId || $yearTerms->has($event['term_id'])) && $event['starts_on'] <= $month->endOfMonth()->toDateString() && $event['ends_on'] >= $month->toDateString())->sortBy('starts_on');
         $calendarParams = array_filter(['year' => $yearId, 'month' => $month->format('Y-m')]);
         $calendarRoute = $canEdit ? 'admin.settings.academic-calendar' : 'registrar.academic-calendar';
         return view('admin.settings.academic-calendar', compact('calendar', 'canEdit', 'editTerm', 'editEvent', 'editYear', 'month', 'monthEvents', 'calendarRoute', 'yearId', 'selectedYear', 'yearTerms', 'calendarParams'));
@@ -45,7 +45,7 @@ class AcademicCalendarController extends Controller
             'kind' => ['required', Rule::in(['year', 'term', 'event'])],
             'id' => ['nullable', 'uuid'], 'name' => ['required', 'string', 'max:100'],
             'year_id' => ['required_if:kind,term', 'nullable', 'uuid'],
-            'term_id' => ['required_if:kind,event', 'nullable', 'uuid'],
+            'term_id' => ['nullable', 'uuid'],
             'type' => ['required_if:kind,event', 'nullable', Rule::in(AcademicCalendar::TYPES)],
             'starts_on' => ['required', 'date_format:Y-m-d'],
             'ends_on' => ['required', 'date_format:Y-m-d', 'after_or_equal:starts_on'],
@@ -53,7 +53,7 @@ class AcademicCalendarController extends Controller
         ]);
         $service->save($input, $request->user()->id);
         $calendar = $service->get();
-        $yearId = $input['kind'] === 'term' ? $input['year_id'] : ($input['kind'] === 'event' ? $calendar['terms'][$input['term_id']]['year_id'] : ($input['id'] ?? array_key_last($calendar['years'])));
+        $yearId = $input['kind'] === 'term' ? $input['year_id'] : ($input['kind'] === 'event' ? ($input['year_id'] ?? $calendar['terms'][$input['term_id']]['year_id']) : ($input['id'] ?? array_key_last($calendar['years'])));
         return redirect()->route('admin.settings.academic-calendar', ['year' => $yearId])->with('success', 'Calendar saved.');
     }
 }

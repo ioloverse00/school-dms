@@ -15,11 +15,13 @@
 @if(!$formKind)
 <nav class="calendar-view-nav" aria-label="Calendar views">
 <a href="{{ route($calendarRoute, array_merge($calendarParams, ['panel' => 'years'])) }}" @if($panel === 'years') aria-current="page" @endif>Academic years</a>
-<a href="{{ route($calendarRoute, $calendarParams) }}" @if(!in_array($panel, ['years', 'semesters', 'history'], true)) aria-current="page" @endif>Calendar</a>
+<a href="{{ route($calendarRoute, $calendarParams) }}" @if(!in_array($panel, ['years', 'semesters', 'history', 'holidays'], true)) aria-current="page" @endif>Calendar</a>
 <a href="{{ route($calendarRoute, array_merge($calendarParams, ['panel' => 'semesters'])) }}" @if($panel === 'semesters') aria-current="page" @endif>Semesters</a>
 @if($canEdit)<a href="{{ route($calendarRoute, array_merge($calendarParams, ['panel' => 'history'])) }}" @if($panel === 'history') aria-current="page" @endif>Change history</a>@endif
+@if($canEdit)<a href="{{ route($calendarRoute, array_merge($calendarParams, ['panel' => 'holidays'])) }}" @if($panel === 'holidays') aria-current="page" @endif>PH holiday suggestions</a>@endif
 </nav>
-@if(!in_array($panel, ['years', 'semesters', 'history'], true) || ($panel === 'history' && !$canEdit))
+@if($canEdit && $panel === 'holidays')@include('partials.holiday-suggestions')@endif
+@if(!in_array($panel, ['years', 'semesters', 'history', 'holidays'], true) || (in_array($panel, ['history', 'holidays']) && !$canEdit))
 @if($selectedYear)
 @include('partials.academic-calendar-panel')
 @else
@@ -62,7 +64,11 @@
 @elseif($kind === 'term')
 <div><label for="term-year">Academic year</label><select class="spark-field form-select-custom" id="term-year" name="year_id" required><option value="">Select academic year</option>@foreach($calendar['years'] as $id => $year)<option value="{{ $id }}" @selected($field('year_id', $yearId) === $id)>{{ $year['name'] }}</option>@endforeach</select></div>
 @else
+@if(($item['type'] ?? null) === 'holiday' && !($item['term_id'] ?? null))
+<input type="hidden" name="year_id" value="{{ $field('year_id', $yearId) }}"><p class="portal-note">Academic year holiday</p>
+@else
 <div><label for="event-term">Semester</label><select class="spark-field form-select-custom" id="event-term" name="term_id" required><option value="">Select semester</option>@foreach($yearTerms as $termId => $term)<option value="{{ $termId }}" @selected($field('term_id') === $termId)>{{ $term['academic_year'] }} / {{ $term['name'] }}{{ $term['archived'] ? ' (archived)' : '' }}</option>@endforeach</select></div>
+@endif
 <div><label for="event-type">Event type</label><select class="spark-field form-select-custom" id="event-type" name="type" required>@foreach(\App\Services\AcademicCalendar::TYPES as $type)<option value="{{ $type }}" @selected($field('type', 'enrollment') === $type)>{{ ucfirst(str_replace('_', ' ', $type)) }}</option>@endforeach</select></div>
 <p class="portal-note">Enrollment may start before classes, within the academic year, and must end by semester end. Graduation may fall anywhere within its academic year. Other events must fall within the semester.</p>
 @endif
