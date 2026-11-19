@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" x-data="data()" :class="{ 'theme-dark': dark }" :data-bs-theme="dark ? 'dark' : 'light'">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="csrf-token" content="{{ csrf_token() }}"><title>Account access | Registrar Portal</title>
 @include('partials.portal-styles')
-<script src="{{ asset('assets/js/init-alpine.js') }}"></script><script src="{{ asset('assets/vendor/alpine/alpine.min.js') }}" defer></script>
+<script src="{{ asset('assets/js/init-alpine.js').'?v='.config('assets.version') }}"></script><script src="{{ asset('assets/vendor/alpine/alpine.min.js') }}" defer></script>
 </head><body class="portal-auth">
 <div class="login-wrapper portal-auth-shell"><div class="login-bg-shape login-bg-shape-1" aria-hidden="true"></div><div class="login-bg-shape login-bg-shape-2" aria-hidden="true"></div>
 <main class="portal-auth-main"><div class="login-card portal-auth-panel">
@@ -19,4 +19,4 @@ request()->routeIs('password.confirm') => 'Confirm your password', request()->ro
 <p class="portal-auth-help">Need access? Contact your school for an account invitation.</p>
 @if(!request()->routeIs('login', 'password.request'))<a class="portal-inline-link" href="{{ route('login') }}">Back to sign in &rarr;</a>@endif
 @include('partials.spark-credit')
-</div></main></div>@unless(request()->routeIs('login'))@include('partials.feedback-toasts')@endunless<script src="{{ asset('assets/js/spark-portal.js') }}" defer></script></body></html>
+</div></main></div>@unless(request()->routeIs('login'))@include('partials.feedback-toasts')@endunless<script src="{{ asset('assets/js/spark-portal.js').'?v='.config('assets.version') }}" defer></script></body></html>

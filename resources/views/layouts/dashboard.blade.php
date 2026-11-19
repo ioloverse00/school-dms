@@ -4,7 +4,7 @@
     <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', auth()->user()->hasRole('admin') ? 'Admin Portal' : (auth()->user()->hasRole('registrar') ? 'Registrar Portal' : 'Student Portal')) · School DMS</title>
     @include('partials.portal-styles')
-    <script src="{{ asset('assets/js/init-alpine.js') }}"></script>
+    <script src="{{ asset('assets/js/init-alpine.js').'?v='.config('assets.version') }}"></script>
     <script src="{{ asset('assets/vendor/alpine/alpine.min.js') }}" defer></script>
 </head>
 <body class="portal-app">
@@ -119,6 +119,6 @@
 </div>
 @include('partials.feedback-toasts')
 @include('partials.confirm-action')
-<script src="{{ asset('assets/js/spark-portal.js') }}" defer></script>
+<script src="{{ asset('assets/js/spark-portal.js').'?v='.config('assets.version') }}" defer></script>
 @stack('scripts')
 </body></html>

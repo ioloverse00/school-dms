@@ -166,6 +166,8 @@ def main():
     if not all(os.environ.get(key) for key in ('FTP_HOST', 'FTP_USER', 'FTP_PASSWORD')):
         raise ValueError('Missing FTP secrets')
     release = subprocess.check_output(['git', 'rev-parse', '--short', 'HEAD']).decode().strip() + '-' + uuid.uuid4().hex[:8]
+    # New asset URLs on every release prevent browsers retaining old CSS/JS.
+    Path('config/assets.php').write_text("<?php\nreturn ['version' => '" + release + "'];\n", encoding='utf-8')
     with ftplib.FTP_TLS(context=ssl.create_default_context(), timeout=60) as ftp:
         ftp.connect(os.environ['FTP_HOST'], 21)
         ftp.auth()
@@ -176,8 +178,11 @@ def main():
             with urllib.request.urlopen('https://staging.school-dms.online/login', timeout=30) as response:
                 if response.status != 200 or not response.url.startswith('https://staging.school-dms.online/'):
                     raise ValueError('Staging login health check failed')
-                if b'Sign in' not in response.read(200000):
+                body = response.read(200000)
+                if b'Sign in' not in body:
                     raise ValueError('Expected login form not found')
+                if ('favicon.svg?v=' + release).encode() not in body:
+                    raise ValueError('Staging asset version verification failed')
             with urllib.request.urlopen('https://staging.school-dms.online/assets/images/favicon.svg', timeout=30) as response:
                 if response.read(100000) != Path('public/assets/images/favicon.svg').read_bytes():
                     raise ValueError('Staging favicon verification failed')

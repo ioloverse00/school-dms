@@ -58,11 +58,16 @@ class NotificationControlsTest extends TestCase
   $this->assertStringContainsString('View all notifications',$panel->json('html'));
  }
  public function test_notifications_page_requires_login_and_supports_each_portal(): void {
+  config(['assets.version'=>'notification-layout-release']);
   $this->get(route('notifications.index'))->assertRedirect(route('login'));
-  $this->get(route('login'))->assertSee('assets/images/favicon.svg');
+  $this->get(route('login'))->assertSee('assets/images/favicon.svg?v=notification-layout-release')
+   ->assertSee('assets/css/spark-portal.css?v=notification-layout-release')
+   ->assertSee('assets/js/init-alpine.js?v=notification-layout-release');
   foreach(['admin','registrar','student'] as $role) {
    Role::findOrCreate($role);$user=User::factory()->create();$user->assignRole($role);
-   $this->actingAs($user)->get(route('notifications.index'))->assertOk()->assertSee('No notifications yet.');
+   $this->actingAs($user)->get(route('notifications.index'))->assertOk()->assertSee('No notifications yet.')
+    ->assertSee('assets/css/spark-portal.css?v=notification-layout-release')
+    ->assertSee('assets/js/spark-portal.js?v=notification-layout-release');
   }
  }
 }
